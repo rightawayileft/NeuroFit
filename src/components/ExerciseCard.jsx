@@ -18,8 +18,8 @@ function StepperField({ value, onChange, step, min = 0, max = 9999, unit, placeh
 
  useEffect(() => {
  if (editing && inputRef.current) {
- inputRef.current.focus;
- inputRef.current.select;
+ inputRef.current.focus();
+ inputRef.current.select();
  }
  }, [editing]);
 
@@ -55,7 +55,7 @@ function StepperField({ value, onChange, step, min = 0, max = 9999, unit, placeh
  aria-label={`Edit ${fieldLabel}`}
  onChange={e => onChange(e.target.value)}
  onBlur={handleBlur}
- onKeyDown={e => { if (e.key === 'Enter') handleBlur; }}
+ onKeyDown={e => { if (e.key === 'Enter') handleBlur(); }}
  style={{
  width: '100%', height: 44, background: 'rgba(255,255,255,0.06)',
  border: `2px solid ${T.accent}`, borderRadius: '12px',

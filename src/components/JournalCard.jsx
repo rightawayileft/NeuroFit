@@ -52,7 +52,7 @@ function JournalCard({ workout }) {
  const handleAdd = () => {
  if (!newEntry.trim()) return;
  const todayStr = today();
- const ctx = getCurrentContext;
+ const ctx = getCurrentContext();
  const entry = {
  id: `j_${Date.now()}`,
  timestamp: Date.now(),
@@ -76,12 +76,12 @@ function JournalCard({ workout }) {
  if (filtered.length > 0) {
  LS.set(`journal:${dateStr}`, filtered);
  } else {
- localStorage.removeItem(`journal:${dateStr}`);
+ LS.remove(`journal:${dateStr}`);
  }
  setRecentEntries(prev => prev.filter(e => e.id !== entryId));
  };
 
- const ctx = getCurrentContext;
+ const ctx = getCurrentContext();
  const displayEntries = showAll ? recentEntries : recentEntries.slice(0, 4);
 
  return (

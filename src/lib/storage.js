@@ -33,6 +33,15 @@ export const LS = {
  return false;
  }
  },
+ remove(key) {
+ try {
+ if (_lsAvailable) localStorage.removeItem(key);
+ else delete _memoryStore[key];
+ return true;
+ } catch {
+ return false;
+ }
+ },
  _quotaExceeded: false,
  getUsageKB() {
  try {

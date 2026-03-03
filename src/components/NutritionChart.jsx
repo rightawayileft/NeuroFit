@@ -44,8 +44,13 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  <Utensils size={24} color={T.text3} style={{ marginBottom: '8px' }} />
  <div style={{ fontSize: '14px', color: T.text2, marginBottom: '4px' }}>No nutrition data yet</div>
  <div style={{ fontSize: '12px', color: T.text3 }}>Log calories on the Today tab to see trends</div>
- <div style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7 }}
- onClick={goToToday} role="button" tabIndex={0}>← Switch to Today to start logging</div>
+ <button
+ type="button"
+ onClick={goToToday}
+ style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7, background:'none', border:'none' }}
+ >
+ {'<- Switch to Today to start logging'}
+ </button>
  </GlassCard>
  );
  }

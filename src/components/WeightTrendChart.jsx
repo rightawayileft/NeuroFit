@@ -43,14 +43,21 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
  }).filter(Boolean);
  }, [smoothed]);
 
+ const pointCount = filteredData.length;
+
  if (allLogs.length === 0) {
  return (
  <GlassCard style={{ padding:'20px', textAlign:'center', marginBottom:'16px' }}>
  <Scale size={24} color={T.text3} style={{ marginBottom:'8px' }} />
  <div style={{ fontSize:'14px', color:T.text2, marginBottom:'4px' }}>No weight data yet</div>
  <div style={{ fontSize:'12px', color:T.text3 }}>Log your weight on the Today tab to see trends</div>
- <div style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7 }}
- onClick={goToToday} role="button" tabIndex={0}>← Switch to Today to start logging</div>
+ <button
+ type="button"
+ onClick={goToToday}
+ style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7, background:'none', border:'none' }}
+ >
+ {'<- Switch to Today to start logging'}
+ </button>
  </GlassCard>
  );
  }
@@ -116,7 +123,7 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
 
  <GlassCard animate={false} style={{ padding:'12px 8px 8px', overflow:'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}
- role="img" aria-label={`Weight trend chart showing ${pts.length} data points over ${range}`}
+ role="img" aria-label={`Weight trend chart showing ${pointCount} data points over ${range}`}
  onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
  <defs>
  <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">

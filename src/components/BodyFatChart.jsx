@@ -38,8 +38,13 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  <Activity size={24} color={T.text3} style={{ marginBottom: '8px' }} />
  <div style={{ fontSize: '14px', color: T.text2, marginBottom: '4px' }}>No body fat data yet</div>
  <div style={{ fontSize: '12px', color: T.text3 }}>Log body fat % on the Today tab to track composition</div>
- <div style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7 }}
- onClick={goToToday} role="button" tabIndex={0}>← Switch to Today to start logging</div>
+ <button
+ type="button"
+ onClick={goToToday}
+ style={{ fontSize:'11px', color:T.accent, marginTop:'8px', cursor:'pointer', opacity:0.7, background:'none', border:'none' }}
+ >
+ {'<- Switch to Today to start logging'}
+ </button>
  </GlassCard>
  );
  }

@@ -436,6 +436,7 @@ export function WorkoutDetailModal({ date, onClose }) {
  const workout = normalizeWorkout(workoutRaw);
  const rehabRaw = LS.get(`rehab:${date}`, null);
  const cardioRaw = LS.get(`cardio:${date}`, null);
+ const cardioEntries = Array.isArray(cardioRaw) ? cardioRaw : cardioRaw ? [cardioRaw] : [];
 
  // Focus trap: keep focus inside modal
  useEffect(() => {
@@ -609,19 +610,20 @@ export function WorkoutDetailModal({ date, onClose }) {
  )}
 
  {/* Cardio data */}
- {cardioRaw && (
+ {cardioEntries.length > 0 && (
  <div style={{ marginTop:'12px', padding:'12px', borderRadius:'12px', background:'rgba(255,107,53,0.06)', border:`1px solid rgba(255,107,53,0.15)` }}>
  <div style={{ fontSize:'12px', fontWeight:600, color:T.accent, marginBottom:'6px', display:'flex', alignItems:'center', gap:'6px' }}>
  <Activity size={14} /> Cardio
  </div>
  <div style={{ fontSize:'12px', color:T.text2 }}>
- {typeof cardioRaw === 'object' ? (
- <>
- {cardioRaw.type && <span style={{ textTransform:'capitalize' }}>{cardioRaw.type}</span>}
- {cardioRaw.duration && <span> &mdash; {cardioRaw.duration} min</span>}
- {cardioRaw.distance && <span> &mdash; {cardioRaw.distance} mi</span>}
- </>
- ) : 'Completed'}
+ {cardioEntries.map((entry, idx) => (
+ <div key={idx} style={{ marginBottom: idx < cardioEntries.length - 1 ? '4px' : 0 }}>
+ {entry.name && <span>{entry.name}</span>}
+ {entry.duration && <span> &mdash; {entry.duration} min</span>}
+ {entry.hr && <span> &mdash; HR {entry.hr}</span>}
+ {entry.distance && <span> &mdash; {entry.distance} mi</span>}
+ </div>
+ ))}
  </div>
  </div>
  )}
