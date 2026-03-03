@@ -351,6 +351,7 @@ export default function App() {
  <p style={{ marginBottom:'10px' }}><strong style={{ color:T.text }}>Medical Disclaimer:</strong> This app is for <strong>informational purposes only</strong> and does not constitute medical advice, diagnosis, or treatment.</p>
  <p style={{ marginBottom:'10px' }}>Please <strong>consult a physician and/or licensed physical therapist</strong> before beginning any exercise program, especially if you have pre-existing injuries or medical conditions.</p>
  <p style={{ marginBottom:'10px' }}>The creators of this app <strong>assume no liability</strong> for any injuries or damages resulting from its use.</p>
+ <p style={{ marginBottom:'10px' }}><strong style={{ color:T.text }}>External Links:</strong> Exercise tutorial videos link to third-party YouTube content. These links are provided for convenience only and do not imply endorsement by or affiliation with the content creators.</p>
  <p style={{ marginBottom:'10px' }}><strong style={{ color:T.text }}>Privacy:</strong> All data is stored locally on your device. If you enable the AI Coach, your data is transmitted directly to your selected API provider and is subject to their privacy policy.</p>
  </div>
  <button onClick={() => setDisclaimerAccepted(true)} style={{ width:'100%', padding:'14px', background:T.accent, color:'#fff', border:'none', borderRadius:'12px', fontSize:'15px', fontWeight:600, cursor:'pointer' }}>

@@ -380,7 +380,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
  <div
  onClick={(e) => { e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); }}
- role="button" tabIndex={0} aria-label="Watch form tutorial video"
+ role="button" tabIndex={0} aria-label="Watch form tutorial on YouTube (external link, not affiliated)"
  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); } }}
  style={{
  width: 32, height: 32, borderRadius: '8px',
@@ -391,7 +391,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  }}
  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,0,0,0.25)'}
  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,0,0,0.12)'}
- title="Watch form tutorial"
+ title="Watch form tutorial on YouTube (external link — not affiliated with or endorsed by the creator)"
  >
  <Play size={14} color="#FF4444" fill="#FF4444" />
  </div>

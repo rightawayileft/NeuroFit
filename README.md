@@ -37,4 +37,5 @@ See PRIVACY.md for details on data handling, especially regarding the AI Coach f
 
 ## License
 
-BSD 3-Clause License. See LICENSE for details.
+Business Source License 1.1. See LICENSE for details.
+Converts to BSD 3-Clause on 2030-03-03.
