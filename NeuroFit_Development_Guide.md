@@ -3,12 +3,12 @@
 
 **Version:** 1.0  
 **App:** NeuroFit (NeuroRehab Tracker)  
-**Current state:** ~9,000-line single-file React PWA (`App.jsx`) with Vite + React 18  
-**License:** BSD-3-Clause  
+**Current state:** Modular React PWA with Vite + React 18 (Phase A complete)
+**License:** BUSL-1.1 (converts to BSD-3-Clause on 2030-03-03)
 
 ---
 
-# Part A — Breaking Up the Monolith
+# Part A — Breaking Up the Monolith ✅ COMPLETE
 
 ## A.1 — Why This Matters
 
@@ -280,7 +280,7 @@ After all 40 steps are complete, verify:
 
 ---
 
-# Part B — API Integration
+# Part B — API Integration (NOT STARTED)
 
 ## B.1 — API Configuration Layer
 
@@ -822,7 +822,7 @@ VITE_YOUTUBE_API_KEY=
 
 ---
 
-# Part C — Documentation, Testability & Roadmap
+# Part C — Documentation, Testability & Roadmap (NOT STARTED)
 
 ## C.1 — README Overhaul
 
