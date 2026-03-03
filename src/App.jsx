@@ -11,6 +11,8 @@ import {
 import { T, css } from '@/design/tokens';
 import { LEVELS, XP_REWARDS, BODY_XP } from '@/data/levels';
 import { DEFAULT_SETTINGS, DEFAULT_NUTRITION_CONFIG, DEFAULT_CALIBRATION, DEFAULT_BODY_LOG, DEFAULT_STREAKS } from '@/data/defaults';
+import { DAILY_REHAB } from '@/data/dailyRehab';
+import { CARDIO_OPTIONS } from '@/data/cardioOptions';
 
 
 // ============================================================
@@ -264,20 +266,6 @@ function getVideoUrl(exerciseId, exerciseName) {
  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
 }
 
-const DAILY_REHAB = [
- {id:'RH-01',name:'True Couch Stretch',detail:'2 min each side',cues:['Rear knee against wall','Tuck pelvis posteriorly','Hold — don’t bounce']},
- {id:'RH-02',name:'Supine Floor Slides',detail:'2×10',cues:['Arms in goalpost on floor','Slide overhead keeping contact','Depress scapulae throughout']},
- {id:'RH-03',name:'Dead Bugs',detail:'2×8 each side',cues:['Back flat on floor','Opposite arm + leg extend','Exhale as you extend']},
- {id:'RH-04',name:'Single-Leg Balance',detail:'30s × 2 each',cues:['Barefoot','Slight knee bend','Eyes forward']},
- {id:'NK-01',name:'Chin Tucks',detail:'3×10 with 5s holds',cues:['Double chin','Retract, don\'t nod','Hold 5 seconds']},
-];
-
-const CARDIO_OPTIONS = [
- {id:'CARDIO-01',name:'Incline Treadmill Walk',settings:'12-15% incline, 3.0mph',icon:'🚶'},
- {id:'CARDIO-02',name:'Stationary Bike',settings:'Moderate resistance, 70-80 RPM',icon:'🚴'},
- {id:'CARDIO-03',name:'Rowing Machine',settings:'Damper 3-5, 22-26 spm',icon:'🚣'},
- {id:'CARDIO-04',name:'Elliptical',settings:'Moderate resistance',icon:'🏃'},
-];
 
 
 const UPPER_CATEGORIES = new Set(['chest', 'shoulders', 'back', 'triceps', 'biceps']);
