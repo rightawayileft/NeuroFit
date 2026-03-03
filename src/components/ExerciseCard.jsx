@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
  Dumbbell, Check, Play, RotateCcw, Shuffle, Star, Trophy,
- ChevronDown, Plus, Minus, Info, Settings, ArrowRight, XCircle
+ ChevronDown, Plus, Minus, Info, Settings, ArrowRight, XCircle, Globe
 } from 'lucide-react';
 import { T } from '@/design/tokens';
 import { UPPER_CATEGORIES } from '@/data/volumeLandmarks';
 import { EXERCISES } from '@/data/exercises';
 import { getVideoUrl } from '@/data/videoUrls';
+import { searchExerciseDB } from '@/api/exerciseDB';
+import { searchExerciseVideo } from '@/api/youtube';
 import { estimate1RM, detectStall } from '@/lib/progressiveOverload';
 import { detectPRs } from '@/lib/prDetection';
 import RestTimer from '@/components/RestTimerBar';
@@ -192,7 +194,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  </div>
 
  {/* Stepper fields row */}
- <div style={{ display: 'grid', gridTemplateColumns: showRPE ? '1fr 1fr 0.8fr' : '1fr 1fr', gap: '8px' }}>
+ <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '8px' }}>
  <div>
  <div style={{ fontSize: '10px', color: T.text3, textTransform: 'uppercase', letterSpacing: '0.3px',
  marginBottom: '4px', textAlign: 'center', fontWeight: 600 }}>Weight</div>
@@ -212,7 +214,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  />
  </div>
  {showRPE && (
- <div>
+ <div style={{ gridColumn: '1 / -1' }}>
  <div style={{ fontSize: '10px', color: T.text3, textTransform: 'uppercase', letterSpacing: '0.3px',
  marginBottom: '4px', textAlign: 'center', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
  RPE
@@ -224,7 +226,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  <StepperField
  value={set.rpe} onChange={v => onUpdate(index, 'rpe', v)}
  step={0.5} min={1} max={10}
- placeholder="—" done={set.done} color={T.warn}
+ placeholder="-" done={set.done} color={T.warn}
  />
  </div>
  )}
@@ -233,24 +235,172 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  );
 }
 
-function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, stats, weightUnit = 'lbs', defaultRestTimer = 90, showRPE = true, goToSettings, autoStartTimer = true, timerVibrate = true, weightIncrementUpper = 5, weightIncrementLower = 10, trainingGoal = 'hypertrophy', enableProgressiveOverload = true, restEndTime = null, onRestTimerChange, onPRDetected }) {
+function CommunityExerciseSkeleton() {
+ return (
+ <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+ {[0, 1, 2].map((item) => (
+ <div
+ key={item}
+ style={{
+  padding:'12px',
+  borderRadius:'12px',
+  border:'1px solid rgba(78,205,196,0.08)',
+  background:'rgba(255,255,255,0.02)',
+  display:'grid',
+  gridTemplateColumns:'28px 1fr 16px',
+  gap:'10px',
+  alignItems:'center',
+ }}
+ >
+ <div style={{
+  width:28,
+  height:28,
+  borderRadius:'8px',
+  background:'linear-gradient(90deg, rgba(78,205,196,0.08), rgba(255,255,255,0.1), rgba(78,205,196,0.08))',
+  backgroundSize:'200% 100%',
+  animation:'shimmer 1.2s linear infinite',
+ }} />
+ <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+ <div style={{
+  width: item === 1 ? '78%' : '66%',
+  height:10,
+  borderRadius:'999px',
+  background:'linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.14), rgba(255,255,255,0.05))',
+  backgroundSize:'200% 100%',
+  animation:'shimmer 1.2s linear infinite',
+ }} />
+ <div style={{
+  width: item === 2 ? '52%' : '60%',
+  height:8,
+  borderRadius:'999px',
+  background:'linear-gradient(90deg, rgba(78,205,196,0.05), rgba(78,205,196,0.14), rgba(78,205,196,0.05))',
+  backgroundSize:'200% 100%',
+  animation:'shimmer 1.2s linear infinite',
+ }} />
+ </div>
+ <div style={{
+  width:16,
+  height:16,
+  borderRadius:'999px',
+  background:'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04))',
+  backgroundSize:'200% 100%',
+  animation:'shimmer 1.2s linear infinite',
+ }} />
+ </div>
+ ))}
+ </div>
+ );
+}
+
+function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, stats, weightUnit = 'lbs', defaultRestTimer = 90, showRPE = true, goToSettings, autoStartTimer = true, timerVibrate = true, communityExercisesEnabled = false, weightIncrementUpper = 5, weightIncrementLower = 10, trainingGoal = 'hypertrophy', enableProgressiveOverload = true, restEndTime = null, onRestTimerChange, onPRDetected }) {
  const [expanded, setExpanded] = useState(false);
  const [showCues, setShowCues] = useState(false);
  const [showSwapPanel, setShowSwapPanel] = useState(false);
  const [sessionPRs, setSessionPRs] = useState([]);
+ const [showCommunity, setShowCommunity] = useState(false);
+ const [communityExercises, setCommunityExercises] = useState([]);
+ const [communityLoading, setCommunityLoading] = useState(false);
+ const [communityError, setCommunityError] = useState('');
+ const [showVideoPicker, setShowVideoPicker] = useState(false);
+ const [videoOptions, setVideoOptions] = useState([]);
+ const [videoLoading, setVideoLoading] = useState(false);
 
  const completedSets = exercise.logSets?.filter(s => s.done).length || 0;
  const totalSets = exercise.logSets?.length || 0;
  const allDone = completedSets === totalSets && totalSets > 0;
  const phaseData = exercise.phase?.[stats?.phase || 'acute'] || {};
+ const isCommunityExercise = exercise.source === 'exercisedb';
 
  const isUpper = UPPER_CATEGORIES.has(exercise.category);
  const weightIncrement = isUpper ? weightIncrementUpper : weightIncrementLower;
 
  // Progressive overload data
- const prescription = exercise.prescription || null;
- const stall = enableProgressiveOverload ? detectStall(exercise.id) : { stalled: false, fatigued: false };
+ const progressiveOverloadEnabled = enableProgressiveOverload && !isCommunityExercise;
+ const prescription = progressiveOverloadEnabled ? exercise.prescription || null : null;
+ const stall = progressiveOverloadEnabled ? detectStall(exercise.id) : { stalled: false, fatigued: false };
  const e1RM = prescription?.estimated1RM || 0;
+ const cueList = exercise.cues?.length > 0 ? exercise.cues : (exercise.instructions || []);
+
+ const loadCommunityExercises = async () => {
+  if (communityLoading || communityExercises.length > 0) return;
+  const loadStartedAt = performance.now();
+  setCommunityLoading(true);
+  setCommunityError('');
+
+  try {
+   let result = await searchExerciseDB({
+    bodyPart: exercise.category,
+    equipment: exercise.equipment?.[0],
+    limit: 10,
+   });
+
+   if (!result.error && (!result.data || result.data.length === 0) && exercise.equipment?.[0]) {
+    result = await searchExerciseDB({
+     bodyPart: exercise.category,
+     limit: 10,
+    });
+   }
+
+   if (result.error) {
+    setCommunityError(result.message || 'Unable to load community exercises.');
+   } else {
+    const curatedNames = new Set(EXERCISES.map((entry) => entry.name.toLowerCase()));
+    const filtered = result.data
+     .filter((entry) => entry.name.toLowerCase() !== exercise.name.toLowerCase())
+     .filter((entry) => !curatedNames.has(entry.name.toLowerCase()))
+     .slice(0, 6);
+    setCommunityExercises(filtered);
+   }
+  } catch (err) {
+   setCommunityError(err.message || 'Unable to load community exercises.');
+  }
+
+  const elapsed = performance.now() - loadStartedAt;
+  if (elapsed < 180) {
+   await new Promise(resolve => setTimeout(resolve, 180 - elapsed));
+  }
+  setCommunityLoading(false);
+ };
+
+ const toggleCommunityPanel = async (e) => {
+  e.stopPropagation();
+  const nextOpen = !showCommunity;
+  setShowCommunity(nextOpen);
+  if (nextOpen) await loadCommunityExercises();
+ };
+
+ const openVideo = async (e) => {
+  e.stopPropagation();
+
+  if (!isCommunityExercise) {
+   window.open(getVideoUrl(exercise.id, exercise.name), '_blank', 'noopener,noreferrer');
+   return;
+  }
+
+  if (showVideoPicker) {
+   setShowVideoPicker(false);
+   return;
+  }
+
+  if (videoOptions.length > 0) {
+   setExpanded(true);
+   setShowVideoPicker(true);
+   return;
+  }
+
+  setVideoLoading(true);
+  const result = await searchExerciseVideo(exercise.name);
+  setVideoLoading(false);
+
+  if (result.fallback || !result.results?.length) {
+   window.open(result.searchUrl, '_blank', 'noopener,noreferrer');
+   return;
+  }
+
+  setVideoOptions(result.results.slice(0, 3));
+  setExpanded(true);
+  setShowVideoPicker(true);
+ };
 
  const updateSet = (idx, field, value) => {
  // Sanitize numeric fields: reject negative values
@@ -326,6 +476,11 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <div style={{ flex: 1, minWidth: 0 }}>
  <div style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1.3 }}>{exercise.name}</div>
  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
+ {isCommunityExercise && (
+ <span style={{ fontSize: '10px', color: T.teal, background: T.tealGlow, padding: '1px 6px', borderRadius: '4px' }}>
+ community
+ </span>
+ )}
  <span style={{ fontSize: '12px', color: T.text3 }}>{exercise.sets}×{exercise.reps}</span>
  {e1RM > 0 && (
  <span style={{ fontSize: '10px', color: T.teal, background: T.tealGlow, padding: '1px 6px', borderRadius: '4px' }}>
@@ -379,9 +534,9 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  </div>
  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
  <div
- onClick={(e) => { e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); }}
- role="button" tabIndex={0} aria-label="Watch form tutorial on YouTube (external link, not affiliated)"
- onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); } }}
+ onClick={openVideo}
+ role="button" tabIndex={0} aria-label={isCommunityExercise ? 'Find form tutorials for this community exercise' : 'Watch form tutorial on YouTube (external link, not affiliated)'}
+ onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVideo(e); } }}
  style={{
  width: 32, height: 32, borderRadius: '8px',
  background: 'rgba(255,0,0,0.12)',
@@ -391,9 +546,9 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  }}
  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,0,0,0.25)'}
  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,0,0,0.12)'}
- title="Watch form tutorial on YouTube (external link — not affiliated with or endorsed by the creator)"
+ title={isCommunityExercise ? 'Find YouTube form tutorials for this community exercise' : 'Watch form tutorial on YouTube (external link — not affiliated with or endorsed by the creator)'}
  >
- <Play size={14} color="#FF4444" fill="#FF4444" />
+ {videoLoading ? <span style={{ fontSize:'10px', color:'#FF4444', fontWeight:700 }}>...</span> : <Play size={14} color="#FF4444" fill="#FF4444" />}
  </div>
  <span aria-label={`${completedSets} of ${totalSets} sets completed`} style={{ fontSize: '13px', fontFamily: T.mono, color: allDone ? T.success : T.text2 }}>
  {completedSets}/{totalSets}
@@ -422,8 +577,44 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  </div>
  )}
 
+ {showVideoPicker && videoOptions.length > 0 && (
+ <div style={{
+  padding:'10px 12px', margin:'8px 0', borderRadius:'8px',
+  background:'rgba(255,255,255,0.03)', border:`1px solid ${T.border}`,
+ }}>
+ <div style={{ fontSize:'11px', fontWeight:600, color:T.text3, textTransform:'uppercase', letterSpacing:'0.3px', marginBottom:'8px' }}>
+ Video results
+ </div>
+ <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+ {videoOptions.map((video) => (
+ <button
+ key={video.videoId}
+ onClick={(e) => {
+  e.stopPropagation();
+  window.open(video.url, '_blank', 'noopener,noreferrer');
+ }}
+ style={{
+  width:'100%', padding:'10px 12px', borderRadius:'8px', background:T.bgCard,
+  border:`1px solid ${T.border}`, cursor:'pointer', textAlign:'left',
+  display:'flex', alignItems:'center', gap:'8px', color:T.text,
+ }}
+ >
+ <Play size={12} color="#FF4444" fill="#FF4444" />
+ <div style={{ flex:1, minWidth:0 }}>
+ <div style={{ fontSize:'12px', fontWeight:600, color:T.text, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+ {video.title}
+ </div>
+ <div style={{ fontSize:'10px', color:T.text3 }}>{video.channelTitle}</div>
+ </div>
+ <ArrowRight size={12} color={T.text3} />
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
+
  {/* Prescription target */}
- {enableProgressiveOverload && prescription && (
+ {progressiveOverloadEnabled && prescription && (
  <div style={{
  padding: '10px 12px', margin: '8px 0', borderRadius: '8px',
  background: prescription.action === 'increase_weight' ? 'rgba(0,230,118,0.05)'
@@ -539,7 +730,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  {exercise.logSets?.map((set, i) => (
  <SetRow key={i} index={i} set={set} reps={exercise.reps} onUpdate={updateSet} onToggle={toggleSet} onSetType={updateSetType}
  weightUnit={weightUnit} showRPE={showRPE} weightIncrement={weightIncrement} category={exercise.category}
- prescription={enableProgressiveOverload ? prescription : null} />
+ prescription={progressiveOverloadEnabled ? prescription : null} />
  ))}
 
  {/* Rest timer */}
@@ -616,7 +807,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <div style={{ flex:1 }}>
  <div style={{ fontSize:'13px', fontWeight:600, color:T.text }}>{primarySub.name}</div>
  <div style={{ fontSize:'11px', color:T.text3 }}>
- Suggested · {primarySub.sets}×{primarySub.reps} · {primarySub.phase?.[currentPhase]?.s || 'suitable'}
+ Suggested - {primarySub.sets} x {primarySub.reps} - {primarySub.phase?.[currentPhase]?.s || 'suitable'}
  </div>
  </div>
  <ArrowRight size={14} color={T.success} />
@@ -640,10 +831,189 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  >
  <Dumbbell size={12} color={T.text3} />
  <span style={{ flex:1 }}>{alt.name}</span>
- <span style={{ fontSize:'10px', color:T.text3 }}>{alt.sets}×{alt.reps}</span>
+ <span style={{ fontSize:'10px', color:T.text3 }}>{alt.sets} x {alt.reps}</span>
  </button>
  ))}
  </div>
+ </div>
+ )}
+
+ {communityExercisesEnabled && (
+ <div style={{ marginBottom:'8px', paddingTop:'8px', borderTop:`1px solid ${T.border}` }}>
+ <button
+ onClick={toggleCommunityPanel}
+ style={{
+  width:'100%',
+  padding:'11px 12px',
+  borderRadius:'10px',
+  background:'rgba(255,255,255,0.025)',
+  border:'1px solid rgba(78,205,196,0.1)',
+  cursor:'pointer',
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'space-between',
+  color:T.text2,
+  fontSize:'12px',
+  fontWeight:600,
+  boxShadow:'inset 0 1px 0 rgba(255,255,255,0.03)',
+ }}
+ >
+ <span style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+ <span style={{
+  width:22,
+  height:22,
+  borderRadius:'7px',
+  flexShrink:0,
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'center',
+  background:'rgba(78,205,196,0.08)',
+  border:'1px solid rgba(78,205,196,0.12)',
+ }}>
+ <Globe size={12} color={T.teal} />
+ </span>
+ <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'1px' }}>
+ <span>Community library</span>
+ <span style={{ fontSize:'10px', fontWeight:500, color:T.text3 }}>Broader manual swaps outside the curated plan</span>
+ </span>
+ </span>
+ <ChevronDown size={14} color={T.text3} style={{ transform: showCommunity ? 'rotate(180deg)' : 'none', transition:'0.2s' }} />
+ </button>
+
+ {showCommunity && (
+ <div style={{
+  marginTop:'8px',
+  padding:'12px',
+  borderRadius:'12px',
+  background:'linear-gradient(180deg, rgba(78,205,196,0.06), rgba(255,255,255,0.015))',
+  border:'1px solid rgba(78,205,196,0.12)',
+  boxShadow:'inset 0 1px 0 rgba(255,255,255,0.03)',
+ }}>
+ <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'8px', marginBottom:'10px' }}>
+ <div>
+ <div style={{ fontSize:'11px', fontWeight:700, color:T.teal, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'4px' }}>
+ Community swaps
+ </div>
+ <div style={{ fontSize:'11px', color:T.text2, lineHeight:1.5 }}>
+ Community exercises are not individually reviewed for rehab safety. Use caution.
+ {stats?.phase === 'acute' ? ' Acute phase users should treat these as higher-risk manual swaps.' : ''}
+ </div>
+ </div>
+ <span style={{
+  padding:'4px 7px',
+  borderRadius:'999px',
+  border:'1px solid rgba(255,183,77,0.18)',
+  background:'rgba(255,183,77,0.08)',
+  color:T.warn,
+  fontSize:'10px',
+  fontWeight:700,
+  letterSpacing:'0.3px',
+  whiteSpace:'nowrap',
+ }}>
+ Manual swap
+ </span>
+ </div>
+
+ {communityLoading && (
+ <div>
+ <div style={{ fontSize:'10px', color:T.text3, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>
+ Loading matches
+ </div>
+ <CommunityExerciseSkeleton />
+ </div>
+ )}
+
+ {!communityLoading && communityError && (
+ <div style={{
+  fontSize:'11px',
+  color:T.danger,
+  padding:'10px 12px',
+  borderRadius:'10px',
+  background:'rgba(255,82,82,0.06)',
+  border:'1px solid rgba(255,82,82,0.12)',
+ }}>{communityError}</div>
+ )}
+
+ {!communityLoading && !communityError && communityExercises.length === 0 && (
+ <div style={{
+  fontSize:'11px',
+  color:T.text3,
+  padding:'10px 12px',
+  borderRadius:'10px',
+  background:'rgba(255,255,255,0.02)',
+  border:'1px dashed rgba(255,255,255,0.08)',
+ }}>No extra community exercises found for this slot yet.</div>
+ )}
+
+ {!communityLoading && communityExercises.length > 0 && (
+ <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+ {communityExercises.map((alt) => (
+ <button
+ key={alt.id}
+ onClick={(e) => {
+  e.stopPropagation();
+  onSwapExercise?.(exercise.id, alt);
+  setShowSwapPanel(false);
+ }}
+ style={{
+  padding:'11px 12px',
+  borderRadius:'10px',
+  background:'rgba(255,255,255,0.025)',
+  border:'1px solid rgba(78,205,196,0.09)',
+  cursor:'pointer',
+  textAlign:'left',
+  display:'flex',
+  alignItems:'center',
+  gap:'10px',
+  color:T.text,
+  fontSize:'12px',
+  boxShadow:'inset 0 1px 0 rgba(255,255,255,0.02)',
+ }}
+ onMouseEnter={e => { e.currentTarget.style.background = 'rgba(78,205,196,0.05)'; e.currentTarget.style.borderColor = 'rgba(78,205,196,0.18)'; }}
+ onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; e.currentTarget.style.borderColor = 'rgba(78,205,196,0.09)'; }}
+ >
+ <div style={{
+  width:26,
+  height:26,
+  borderRadius:'8px',
+  flexShrink:0,
+  display:'flex',
+  alignItems:'center',
+  justifyContent:'center',
+  background:'rgba(78,205,196,0.08)',
+  border:'1px solid rgba(78,205,196,0.12)',
+ }}>
+ <Globe size={12} color={T.teal} />
+ </div>
+ <div style={{ flex:1 }}>
+ <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px', flexWrap:'wrap' }}>
+ <div style={{ fontWeight:600, color:T.text }}>{alt.name}</div>
+ <span style={{
+  fontSize:'9px',
+  fontWeight:700,
+  letterSpacing:'0.3px',
+  textTransform:'uppercase',
+  color:T.teal,
+  background:'rgba(78,205,196,0.08)',
+  border:'1px solid rgba(78,205,196,0.12)',
+  borderRadius:'999px',
+  padding:'2px 6px',
+ }}>
+ Community
+ </span>
+ </div>
+ <div style={{ fontSize:'10px', color:T.text3, display:'flex', gap:'8px', flexWrap:'wrap' }}>
+ <span>{alt.sets} x {alt.reps}</span>
+ <span>{alt.target || alt.category}</span>
+ </div>
+ </div>
+ <ArrowRight size={12} color={T.text3} />
+ </button>
+ ))}
+ </div>
+ )}
+ </div>
+ )}
  </div>
  )}
 
@@ -678,7 +1048,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <div style={{ marginBottom:'8px' }}>
  <div style={{ fontSize:'11px', fontWeight:600, color:T.teal, textTransform:'uppercase',
  letterSpacing:'0.5px', marginBottom:'6px' }}>Cues</div>
- {exercise.cues?.map((c,i) => (
+ {cueList.map((c,i) => (
  <div key={i} style={{ fontSize:'12px', color:T.text2, padding:'4px 0', paddingLeft:'12px',
  borderLeft:`2px solid ${T.teal}`, marginBottom:'4px' }}>{c}</div>
  ))}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Dumbbell, Heart, Activity, TrendingUp, MessageCircle, Flame, Zap, Settings, AlertTriangle } from 'lucide-react';
 import { T, css } from '@/design/tokens';
 import { LEVELS, XP_REWARDS, BODY_XP } from '@/data/levels';
-import { DEFAULT_SETTINGS, DEFAULT_NUTRITION_CONFIG, DEFAULT_CALIBRATION, DEFAULT_STREAKS } from '@/data/defaults';
+import { DEFAULT_SETTINGS, DEFAULT_NUTRITION_CONFIG, DEFAULT_CALIBRATION, DEFAULT_STREAKS, DEFAULT_API_CONFIG } from '@/data/defaults';
 import { DAILY_REHAB } from '@/data/dailyRehab';
 import { today, dayKey, getWeekId } from '@/lib/dateUtils';
 import { LS } from '@/lib/storage';
@@ -42,6 +42,7 @@ export default function App() {
  const [coachCfg, setCoachCfg] = useState(() => LS.get('coachCfg', DEFAULT_COACH_CONFIG));
  const [nutritionConfig, setNutritionConfig] = useState(() => LS.get('nutritionConfig', DEFAULT_NUTRITION_CONFIG));
  const [calibration, setCalibration] = useState(() => LS.get('bfCalibration', DEFAULT_CALIBRATION));
+ const [apiCfg, setApiCfg] = useState(() => LS.get('apiCfg', DEFAULT_API_CONFIG));
  const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => LS.get('disclaimerAccepted', false));
 
  // Persist
@@ -54,6 +55,7 @@ export default function App() {
  useEffect(() => { LS.set('coachCfg', coachCfg); }, [coachCfg]);
  useEffect(() => { LS.set('nutritionConfig', nutritionConfig); }, [nutritionConfig]);
  useEffect(() => { LS.set('bfCalibration', calibration); }, [calibration]);
+ useEffect(() => { LS.set('apiCfg', apiCfg); }, [apiCfg]);
  useEffect(() => { LS.set('disclaimerAccepted', disclaimerAccepted); }, [disclaimerAccepted]);
 
  // Cross-tab sync: detect when another tab modifies critical data
@@ -355,7 +357,7 @@ export default function App() {
  <p style={{ marginBottom:'10px' }}><strong style={{ color:T.text }}>Privacy:</strong> All data is stored locally on your device. If you enable the AI Coach, your data is transmitted directly to your selected API provider and is subject to their privacy policy.</p>
  </div>
  <button onClick={() => setDisclaimerAccepted(true)} style={{ width:'100%', padding:'14px', background:T.accent, color:'#fff', border:'none', borderRadius:'12px', fontSize:'15px', fontWeight:600, cursor:'pointer' }}>
- I Understand \u2014 Continue
+ I Understand and Continue
  </button>
  </div>
  </div>
@@ -434,6 +436,7 @@ export default function App() {
  onRemoveExercise={handleRemoveExercise}
  onSessionMeta={handleSessionMeta} onAddXP={addXP} goToSettings={goToSettings}
  nutritionConfig={nutritionConfig} calibration={calibration} onSaveBodyLog={handleSaveBodyLog}
+ apiCfg={apiCfg}
  isGeneratingWorkout={isGeneratingWorkout}
  restTimers={restTimers} onRestTimerChange={(exId, endTime) => setRestTimers(prev => endTime ? {...prev, [exId]: endTime } : (() => { const n = {...prev }; delete n[exId]; return n; })())} />
  )}
@@ -458,7 +461,8 @@ export default function App() {
  updateProfile={updateProfile} coachCfg={coachCfg} onUpdateCoachCfg={setCoachCfg}
  history={history} scrollToSection={settingsSection}
  nutritionConfig={nutritionConfig} onUpdateNutritionConfig={setNutritionConfig}
- calibration={calibration} onUpdateCalibration={setCalibration} />
+ calibration={calibration} onUpdateCalibration={setCalibration}
+ apiCfg={apiCfg} onUpdateApiCfg={setApiCfg} />
  )}
  </main>
 

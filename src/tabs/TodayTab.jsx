@@ -637,7 +637,7 @@ export function WorkoutDetailModal({ date, onClose }) {
 // TAB: TODAY
 // ============================================================
 
-function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSessionMeta, onAddXP, settings, goToSettings, nutritionConfig, calibration, onSaveBodyLog, onRemoveExercise, isGeneratingWorkout = false, restTimers = {}, onRestTimerChange }) {
+function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSessionMeta, onAddXP, settings, goToSettings, nutritionConfig, calibration, onSaveBodyLog, onRemoveExercise, apiCfg, isGeneratingWorkout = false, restTimers = {}, onRestTimerChange }) {
  // Extract exercises from v2 format
  const exercises = workout?.exercises || (Array.isArray(workout) ? workout : null);
  const splitLabel = workout?.splitDay?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Full Body';
@@ -646,9 +646,11 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  const [selectedSplit, setSelectedSplit] = useState(null); // null = auto
  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
 
- const handleSwapExercise = useCallback((currentId, newId) => {
- if (!newId || !workout?.exercises) return;
- const newExercise = EXERCISES.find(e => e.id === newId);
+ const handleSwapExercise = useCallback((currentId, nextExercise) => {
+ if (!nextExercise || !workout?.exercises) return;
+ const newExercise = typeof nextExercise === 'string'
+ ? EXERCISES.find(e => e.id === nextExercise)
+ : nextExercise;
  if (!newExercise) return;
  const current = workout.exercises.find(e => e.id === currentId);
  if (!current) return;
@@ -847,6 +849,7 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  showRPE={settings?.showRPE !== false} goToSettings={goToSettings}
  autoStartTimer={settings?.autoStartTimer !== false}
  timerVibrate={settings?.timerVibrate !== false}
+ communityExercisesEnabled={apiCfg?.enableCommunityExercises}
  weightIncrementUpper={settings?.weightIncrementUpper || 5}
  weightIncrementLower={settings?.weightIncrementLower || 10}
  trainingGoal={settings?.trainingGoal || 'hypertrophy'}
@@ -873,6 +876,7 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  showRPE={settings?.showRPE !== false} goToSettings={goToSettings}
  autoStartTimer={settings?.autoStartTimer !== false}
  timerVibrate={settings?.timerVibrate !== false}
+ communityExercisesEnabled={apiCfg?.enableCommunityExercises}
  weightIncrementUpper={settings?.weightIncrementUpper || 5}
  weightIncrementLower={settings?.weightIncrementLower || 10}
  trainingGoal={settings?.trainingGoal || 'hypertrophy'}

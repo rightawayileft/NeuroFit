@@ -2,15 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Dumbbell, Heart, ChevronDown, Clock, Plus, X,
   Settings, Target, Download, Upload, Trash2, Scale,
-  Database, MessageCircle, AlertTriangle, Lock
+  Database, MessageCircle, AlertTriangle, Lock, Globe, RefreshCw
 } from 'lucide-react';
 import { T } from '@/design/tokens';
 import { EXERCISES } from '@/data/exercises';
+import { VIDEO_URLS } from '@/data/videoUrls';
 import { SPLIT_TEMPLATES, selectSplit } from '@/data/splitTemplates';
 import { today } from '@/lib/dateUtils';
 import { LS } from '@/lib/storage';
 import { normalizeWorkout } from '@/lib/workoutNormalize';
 import { recalcCalibration } from '@/lib/bodyFatCalibration';
+import { auditVideoLinks } from '@/api/youtube';
+import { API_LIMITS, getApiKeySource, getApiUsageSnapshot } from '@/api/apiConfig';
 import {
   PROVIDERS, DEFAULT_COACH_CONFIG,
   estimateTokens, buildFullSystemPrompt
@@ -257,7 +260,7 @@ GENETICS: [Add genetic markers in settings]
 PRECAUTIONS: [Configure based on your conditions]
 SUBS: [Configure based on your precautions]`;
 
-function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coachCfg, onUpdateCoachCfg, history, scrollToSection, nutritionConfig, onUpdateNutritionConfig, calibration, onUpdateCalibration }) {
+function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coachCfg, onUpdateCoachCfg, history, scrollToSection, nutritionConfig, onUpdateNutritionConfig, calibration, onUpdateCalibration, apiCfg, onUpdateApiCfg }) {
  const trainingRef = useRef(null);
  const programmingRef = useRef(null);
  const unitsRef = useRef(null);
@@ -266,9 +269,10 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  const bodyTrackingRef = useRef(null);
  const calibrationRef = useRef(null);
  const coachRef = useRef(null);
+ const apiRef = useRef(null);
  const dataRef = useRef(null);
 
- const refs = { training: trainingRef, programming: programmingRef, units: unitsRef, workout: workoutRef, recovery: recoveryRef, bodyTracking: bodyTrackingRef, calibration: calibrationRef, coach: coachRef, data: dataRef };
+ const refs = { training: trainingRef, programming: programmingRef, units: unitsRef, workout: workoutRef, recovery: recoveryRef, bodyTracking: bodyTrackingRef, calibration: calibrationRef, coach: coachRef, api: apiRef, data: dataRef };
 
  useEffect(() => {
  if (scrollToSection && refs[scrollToSection]?.current) {
@@ -281,6 +285,8 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  const upd = (key, val) => onUpdateSettings({ ...settings, [key]: val });
  const updCoach = (key, val) => onUpdateCoachCfg({ ...coachCfg, [key]: val });
  const setCoachKey = (prov, val) => onUpdateCoachCfg({ ...coachCfg, keys:{ ...coachCfg.keys, [prov]: val } });
+ const updApi = (key, val) => onUpdateApiCfg({ ...apiCfg, [key]: val });
+ const setApiKey = (key, val) => onUpdateApiCfg({ ...apiCfg, keys:{ ...apiCfg.keys, [key]: val } });
 
  const coachProvider = PROVIDERS[coachCfg.provider] || PROVIDERS.anthropic;
  const currentModel = coachCfg.model === '__custom__'
@@ -303,6 +309,15 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  };
 
  const [confirmReset, setConfirmReset] = useState(false);
+ const [apiUsage, setApiUsage] = useState(() => getApiUsageSnapshot());
+ const [auditState, setAuditState] = useState({ loading:false, error:'', result:null });
+
+ useEffect(() => {
+ const interval = setInterval(() => {
+ setApiUsage(getApiUsageSnapshot());
+ }, 1500);
+ return () => clearInterval(interval);
+ }, []);
 
  // Data management helpers
  const exportData = () => {
@@ -393,6 +408,20 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  const clearAllData = () => {
  try { localStorage.clear(); } catch { /* ignore */ }
  window.location.reload();
+ };
+
+ const runVideoAudit = async () => {
+ setAuditState({ loading:true, error:'', result:null });
+ try {
+ const result = await auditVideoLinks(VIDEO_URLS);
+ if (result.error) {
+  setAuditState({ loading:false, error:result.error, result:null });
+  return;
+ }
+ setAuditState({ loading:false, error:'', result });
+ } catch (err) {
+ setAuditState({ loading:false, error:err.message || 'Audit failed.', result:null });
+ }
  };
 
  const storageUsed = (() => {
@@ -1164,6 +1193,116 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  </div>
  ) : null;
  })()}
+ </SettingsSection>
+
+ {/* =============== API =============== */}
+ <SettingsSection id="api" title="API & Integrations" icon={Globe} sectionRef={apiRef}
+ autoOpen={scrollToSection === 'api'}>
+ <div style={{ ...S.rowBorder, paddingTop:0 }}>
+ <div>
+ <span style={{ fontSize:'14px', fontWeight:600, color:T.text }}>Enable community exercises</span>
+ <div style={{ fontSize:'10px', color:T.text3, marginTop:'2px' }}>
+ Show ExerciseDB-powered manual swap options beneath curated alternatives.
+ </div>
+ </div>
+ <button onClick={() => updApi('enableCommunityExercises', !apiCfg.enableCommunityExercises)} role="switch" aria-checked={apiCfg.enableCommunityExercises} style={S.toggle(apiCfg.enableCommunityExercises)}>
+ <div style={S.toggleDot(apiCfg.enableCommunityExercises)} />
+ </button>
+ </div>
+
+ <div style={{ ...S.sub, marginTop:'12px' }}>
+ <span style={S.label}>YouTube Data API Key</span>
+ <input
+ type="password"
+ value={apiCfg.keys?.youtubeDataV3 || ''}
+ placeholder="AIza..."
+ onChange={e => setApiKey('youtubeDataV3', e.target.value)}
+ aria-label="YouTube Data API key"
+ style={S.input}
+ />
+ <div style={{ fontSize:'10px', color:T.text3, marginTop:'4px' }}>
+ Leave blank to use `VITE_YOUTUBE_API_KEY` from `.env`.
+ {' '}
+ {getApiKeySource('youtubeDataV3') === 'local' ? 'Currently using the locally stored key.' : getApiKeySource('youtubeDataV3') === 'env' ? 'Currently using the environment key.' : 'No key detected yet.'}
+ </div>
+ </div>
+
+ <div style={S.sub}>
+ <span style={S.label}>ExerciseDB API Key</span>
+ <input
+ type="password"
+ value={apiCfg.keys?.exerciseDB || ''}
+ placeholder="Optional"
+ onChange={e => setApiKey('exerciseDB', e.target.value)}
+ aria-label="ExerciseDB API key"
+ style={S.input}
+ />
+ <div style={{ fontSize:'10px', color:T.text3, marginTop:'4px' }}>
+ Optional. The current open ExerciseDB host works without a key, but this leaves room for alternate hosts later.
+ </div>
+ </div>
+
+ <div style={S.sub}>
+ <span style={S.label}>Usage Status</span>
+ <div style={{ display:'grid', gap:'8px' }}>
+ {[
+  { id:'exerciseDB', label:'ExerciseDB', limit: API_LIMITS.exerciseDB },
+  { id:'youtube', label:'YouTube', limit: API_LIMITS.youtube },
+ ].map((entry) => {
+  const usage = apiUsage[entry.id] || { calls:0, cacheHits:0, failures:0, recentCalls:0, remainingThisMinute:entry.limit };
+  return (
+  <div key={entry.id} style={{ padding:'10px 12px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:`1px solid ${T.border}` }}>
+  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+  <span style={{ fontSize:'13px', fontWeight:600, color:T.text }}>{entry.label}</span>
+  <span style={{ fontSize:'11px', color:T.text3 }}>{usage.remainingThisMinute}/{entry.limit} left this minute</span>
+  </div>
+  <div style={{ fontSize:'11px', color:T.text2, lineHeight:1.6 }}>
+  {usage.calls} calls · {usage.cacheHits} cache hits · {usage.failures} failures
+  </div>
+  </div>
+  );
+ })}
+ </div>
+ </div>
+
+ <div style={S.sub}>
+ <span style={S.label}>Curated Video Audit</span>
+ <button onClick={runVideoAudit} disabled={auditState.loading} style={{
+  width:'100%', padding:'12px 16px', borderRadius:'10px', border:`1px solid ${T.border}`,
+  background:'rgba(255,255,255,0.04)', color:T.text, fontSize:'13px', fontWeight:500,
+  cursor:auditState.loading ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
+  opacity:auditState.loading ? 0.6 : 1,
+ }}>
+ <RefreshCw size={15} style={{ animation:auditState.loading ? 'spin 1s linear infinite' : 'none' }} />
+ {auditState.loading ? 'Checking video links...' : 'Audit curated YouTube links'}
+ </button>
+ <div style={{ fontSize:'10px', color:T.text3, marginTop:'4px' }}>
+ Uses the YouTube Data API when a key is available. Good for checking if hardcoded tutorials are still public.
+ </div>
+
+ {auditState.error && (
+ <div style={{ marginTop:'8px', fontSize:'11px', color:T.danger }}>{auditState.error}</div>
+ )}
+
+ {auditState.result && (
+ <div style={{ marginTop:'8px', padding:'10px 12px', background:'rgba(255,255,255,0.03)', borderRadius:'10px', border:`1px solid ${T.border}` }}>
+ <div style={{ fontSize:'12px', color:T.text2, marginBottom:'6px' }}>
+ {auditState.result.valid}/{auditState.result.total} curated links verified as public.
+ </div>
+ {auditState.result.broken.length > 0 ? (
+ <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+ {auditState.result.broken.slice(0, 8).map((entry) => (
+ <div key={entry.exerciseId} style={{ fontSize:'11px', color:T.warn, fontFamily:T.mono }}>
+ {entry.exerciseId} · {entry.status}
+ </div>
+ ))}
+ </div>
+ ) : (
+ <div style={{ fontSize:'11px', color:T.success }}>No broken curated video links found in this run.</div>
+ )}
+ </div>
+ )}
+ </div>
  </SettingsSection>
 
  {/* =============== DATA =============== */}

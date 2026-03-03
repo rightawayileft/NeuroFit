@@ -91,3 +91,11 @@ export const DEFAULT_STREAKS = {
  nutritionLog: { current: 0, best: 0, lastDate: null },
  combined: { current: 0, best: 0, lastDate: null },
 };
+
+export const DEFAULT_API_CONFIG = {
+ enableCommunityExercises: false,
+ keys: {
+ exerciseDB: '',
+ youtubeDataV3: '',
+ },
+};
