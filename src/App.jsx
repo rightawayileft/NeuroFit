@@ -14,6 +14,8 @@ import { DEFAULT_SETTINGS, DEFAULT_NUTRITION_CONFIG, DEFAULT_CALIBRATION, DEFAUL
 import { DAILY_REHAB } from '@/data/dailyRehab';
 import { CARDIO_OPTIONS } from '@/data/cardioOptions';
 import { UPPER_CATEGORIES, VOLUME_LANDMARKS, getAdjustedLandmarks } from '@/data/volumeLandmarks';
+import { SPLIT_TEMPLATES, selectSplit, getSplitDay } from '@/data/splitTemplates';
+import { today, dayKey, subtractDays } from '@/lib/dateUtils';
 
 
 // ============================================================
@@ -445,13 +447,6 @@ const LS = {
  }
 };
 
-const today = => new Date.toISOString.split('T')[0];
-const dayKey = (prefix) => `${prefix}:${today}`;
-const subtractDays = (dateStr, n) => {
- const d = new Date(dateStr + 'T12:00:00');
- d.setDate(d.getDate - n);
- return d.toISOString.split('T')[0];
-};
 
 // ============================================================
 // BODY TRACKING ALGORITHMS
@@ -801,44 +796,6 @@ function getWorkoutExercises(stored) {
  return w ? w.exercises : [];
 }
 
-// ============================================================
-// SPLIT SELECTION
-// ============================================================
-
-const SPLIT_TEMPLATES = {
- full_body: {
- name: 'Full Body',
- days: [{ name: 'Full Body', slots: ['chest','back','shoulders','quads','hamstrings','glutes','core','calves','triceps','biceps','neck'] }],
- },
- upper_lower: {
- name: 'Upper / Lower',
- days: [
- { name: 'Upper', slots: ['chest','back','shoulders','triceps','biceps'] },
- { name: 'Lower', slots: ['quads','hamstrings','glutes','calves','core'] },
- ],
- },
- ppl: {
- name: 'Push / Pull / Legs',
- days: [
- { name: 'Push', slots: ['chest','shoulders','triceps','core'] },
- { name: 'Pull', slots: ['back','biceps','rear_delts','core'] },
- { name: 'Legs', slots: ['quads','hamstrings','glutes','calves','core'] },
- ],
- },
-};
-
-function selectSplit(daysPerWeek, experienceLevel) {
- if (daysPerWeek >= 6) return 'ppl';
- if (daysPerWeek >= 5) return experienceLevel === 'beginner' ? 'upper_lower' : 'ppl';
- if (daysPerWeek >= 4) return 'upper_lower';
- return 'full_body'; // 2-3 days
-}
-
-function getSplitDay(split, dayIndex) {
- const template = SPLIT_TEMPLATES[split];
- if (!template) return SPLIT_TEMPLATES.full_body.days[0];
- return template.days[dayIndex % template.days.length];
-}
 
 // ============================================================
 // PROGRESSIVE OVERLOAD ENGINE
