@@ -12,10 +12,10 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  const [range, setRange] = useState('3M');
  const [hoverIdx, setHoverIdx] = useState(null);
 
- const cal = useMemo( => LS.get('bfCalibration', DEFAULT_CALIBRATION), []);
+ const cal = useMemo(() => LS.get('bfCalibration', DEFAULT_CALIBRATION), []);
 
- const chartData = useMemo( => {
- const logs = (allBodyLogs || loadAllBodyLogs).filter(l => l.bodyFat?.value);
+ const chartData = useMemo(() => {
+ const logs = (allBodyLogs || loadAllBodyLogs()).filter(l => l.bodyFat?.value);
  return logs.map(l => {
  const rawBF = Number(l.bodyFat.value);
  const calibrated = getCalibratedBodyFat(rawBF, cal);
@@ -24,11 +24,11 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  });
  }, [cal, allBodyLogs]);
 
- const filteredData = useMemo( => {
+ const filteredData = useMemo(() => {
  if (chartData.length === 0) return [];
  const ranges = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 99999 };
  const days = ranges[range] || 90;
- const cutoff = subtractDays(today, days);
+ const cutoff = subtractDays(today(), days);
  return chartData.filter(d => d.date >= cutoff);
  }, [chartData, range]);
 
@@ -70,7 +70,7 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  const calPts = cal.points?.length || 0;
  const bandWidth = calPts === 0 ? 3 : calPts === 1 ? 2 : calPts >= 3 ? 0.8 : 1.2;
  const bandTop = filteredData.map((d, i) => `${i === 0 ? 'M' : 'L'}${xPos(i).toFixed(1)},${yPos(d.calibrated + bandWidth).toFixed(1)}`).join(' ');
- const bandBot = [...filteredData].reverse.map((d, i) => {
+ const bandBot = [...filteredData].reverse().map((d, i) => {
  const origIdx = filteredData.length - 1 - i;
  return `L${xPos(origIdx).toFixed(1)},${yPos(d.calibrated - bandWidth).toFixed(1)}`;
  }).join(' ');
@@ -92,7 +92,7 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  <h3 style={{ fontSize: '15px', fontWeight: 600 }}>Body Fat Trend</h3>
  <div style={{ display: 'flex', gap: '3px' }}>
  {['1W', '1M', '3M', '6M', '1Y', 'All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding: '6px 10px', borderRadius: '6px', border: 'none', fontSize: '10px', fontWeight: 600, cursor: 'pointer', minHeight: '32px',
  background: range === r ? T.accentSoft : 'transparent',
  color: range === r ? T.accent : T.text3,
@@ -104,7 +104,7 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
  <GlassCard animate={false} style={{ padding: '12px 8px 8px', overflow: 'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}
  role="img" aria-label={`Body fat percentage chart over ${range}`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
  <defs>
  <linearGradient id="bfBandGrad" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={T.teal} stopOpacity="0.12" />
@@ -128,14 +128,14 @@ export default function BodyFatChart({ settings, nutritionConfig, goToToday, all
 
  {/* Raw BIA dots */}
  {filteredData.map((d, i) => d.isDEXA ? (
- <g key={i} onMouseEnter={ => setHoverIdx(i)} onTouchStart={ => setHoverIdx(i)}>
+ <g key={i} onMouseEnter={() => setHoverIdx(i)} onTouchStart={() => setHoverIdx(i)}>
  <polygon points={`${xPos(i)},${yPos(d.raw) - 6} ${xPos(i) + 5},${yPos(d.raw)} ${xPos(i)},${yPos(d.raw) + 6} ${xPos(i) - 5},${yPos(d.raw)}`}
  fill={T.warn} stroke={T.bg} strokeWidth="1" />
  <text x={xPos(i)} y={yPos(d.raw) - 9} fill={T.warn} fontSize="7" fontFamily={T.mono} textAnchor="middle">DEXA</text>
  </g>
  ) : (
  <circle key={i} cx={xPos(i)} cy={yPos(d.raw)} r="2.5" fill={T.text3} opacity="0.4"
- onMouseEnter={ => setHoverIdx(i)} onTouchStart={ => setHoverIdx(i)} />
+ onMouseEnter={() => setHoverIdx(i)} onTouchStart={() => setHoverIdx(i)} />
  ))}
 
  {/* X-axis labels */}

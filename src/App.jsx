@@ -24,40 +24,40 @@ import Toast from '@/components/Toast';
 // MAIN APP
 // ============================================================
 
-export default function App {
+export default function App() {
  const [tab, setTab] = useState('today');
  const [restTimers, setRestTimers] = useState({}); // { exerciseId: endTimeMs } — lives in App so it survives tab switches
  const [settingsSection, setSettingsSection] = useState(null);
- const [profile, setProfile] = useState( => LS.get('profile', { phase:'acute', location:'gym', xp:0, streak:0, lastActive:'' }));
- const [settings, setSettings] = useState( => LS.get('appSettings', DEFAULT_SETTINGS));
- const [workout, setWorkout] = useState( => {
+ const [profile, setProfile] = useState(() => LS.get('profile', { phase:'acute', location:'gym', xp:0, streak:0, lastActive:'' }));
+ const [settings, setSettings] = useState(() => LS.get('appSettings', DEFAULT_SETTINGS));
+ const [workout, setWorkout] = useState(() => {
  const raw = LS.get(dayKey('workout'), null);
  if (!raw) return null;
  return normalizeWorkout(raw);
  });
- const [rehabStatus, setRehabStatus] = useState( => LS.get(dayKey('rehab'), {}));
- const [cardioLog, setCardioLog] = useState( => LS.get(dayKey('cardio'), []));
- const [history, setHistory] = useState( => LS.get('history', {}));
+ const [rehabStatus, setRehabStatus] = useState(() => LS.get(dayKey('rehab'), {}));
+ const [cardioLog, setCardioLog] = useState(() => LS.get(dayKey('cardio'), []));
+ const [history, setHistory] = useState(() => LS.get('history', {}));
  const [toast, setToast] = useState(null);
- const [coachCfg, setCoachCfg] = useState( => LS.get('coachCfg', DEFAULT_COACH_CONFIG));
- const [nutritionConfig, setNutritionConfig] = useState( => LS.get('nutritionConfig', DEFAULT_NUTRITION_CONFIG));
- const [calibration, setCalibration] = useState( => LS.get('bfCalibration', DEFAULT_CALIBRATION));
- const [disclaimerAccepted, setDisclaimerAccepted] = useState( => LS.get('disclaimerAccepted', false));
+ const [coachCfg, setCoachCfg] = useState(() => LS.get('coachCfg', DEFAULT_COACH_CONFIG));
+ const [nutritionConfig, setNutritionConfig] = useState(() => LS.get('nutritionConfig', DEFAULT_NUTRITION_CONFIG));
+ const [calibration, setCalibration] = useState(() => LS.get('bfCalibration', DEFAULT_CALIBRATION));
+ const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => LS.get('disclaimerAccepted', false));
 
  // Persist
- useEffect( => { LS.set('profile', profile); }, [profile]);
- useEffect( => { LS.set('appSettings', settings); }, [settings]);
- useEffect( => { LS.set(dayKey('workout'), workout); }, [workout]);
- useEffect( => { LS.set(dayKey('rehab'), rehabStatus); }, [rehabStatus]);
- useEffect( => { LS.set(dayKey('cardio'), cardioLog); }, [cardioLog]);
- useEffect( => { LS.set('history', history); }, [history]);
- useEffect( => { LS.set('coachCfg', coachCfg); }, [coachCfg]);
- useEffect( => { LS.set('nutritionConfig', nutritionConfig); }, [nutritionConfig]);
- useEffect( => { LS.set('bfCalibration', calibration); }, [calibration]);
- useEffect( => { LS.set('disclaimerAccepted', disclaimerAccepted); }, [disclaimerAccepted]);
+ useEffect(() => { LS.set('profile', profile); }, [profile]);
+ useEffect(() => { LS.set('appSettings', settings); }, [settings]);
+ useEffect(() => { LS.set(dayKey('workout'), workout); }, [workout]);
+ useEffect(() => { LS.set(dayKey('rehab'), rehabStatus); }, [rehabStatus]);
+ useEffect(() => { LS.set(dayKey('cardio'), cardioLog); }, [cardioLog]);
+ useEffect(() => { LS.set('history', history); }, [history]);
+ useEffect(() => { LS.set('coachCfg', coachCfg); }, [coachCfg]);
+ useEffect(() => { LS.set('nutritionConfig', nutritionConfig); }, [nutritionConfig]);
+ useEffect(() => { LS.set('bfCalibration', calibration); }, [calibration]);
+ useEffect(() => { LS.set('disclaimerAccepted', disclaimerAccepted); }, [disclaimerAccepted]);
 
  // Cross-tab sync: detect when another tab modifies critical data
- useEffect( => {
+ useEffect(() => {
  const handleStorageChange = (e) => {
  // Only react to workout or profile changes from other tabs
  const criticalKeys = [dayKey('workout'), 'profile', 'history'];
@@ -80,14 +80,14 @@ export default function App {
  }
  };
  window.addEventListener('storage', handleStorageChange);
- return => window.removeEventListener('storage', handleStorageChange);
+ return () => window.removeEventListener('storage', handleStorageChange);
  }, [workout]); // eslint-disable-line react-hooks/exhaustive-deps
 
  // Migration: ensure profile has streaks, populate nutritionConfig from existing settings
- useEffect( => {
+ useEffect(() => {
  // Ensure streaks exist on profile
  if (!profile.streaks) {
- setProfile(p => ({.p, streaks: p.streaks || DEFAULT_STREAKS }));
+ setProfile(p => ({...p, streaks: p.streaks || DEFAULT_STREAKS }));
  }
  // Migrate body weight / body fat from settings to nutritionConfig defaults
  if (settings.bodyWeight && nutritionConfig === DEFAULT_NUTRITION_CONFIG) {
@@ -98,7 +98,7 @@ export default function App {
  // Estimate TDEE as bodyweight × 15 (rough maintenance multiplier)
  const estTDEE = Math.round(bwLbs * 15);
  setNutritionConfig(prev => ({
-.prev,
+...prev,
  initialTDEE: prev.initialTDEE === 2500 ? estTDEE : prev.initialTDEE,
  estimatedTDEE: prev.estimatedTDEE === 2500 ? estTDEE : prev.estimatedTDEE,
  weightUnit: settings.weightUnit || prev.weightUnit,
@@ -114,43 +114,43 @@ export default function App {
  }, []);
 
  // Clear section marker when leaving settings
- useEffect( => {
+ useEffect(() => {
  if (tab !== 'settings') setSettingsSection(null);
  }, [tab]);
 
  // Redirect away from coach tab if coach gets disabled
- useEffect( => {
+ useEffect(() => {
  if (tab === 'coach' && !settings.coachEnabled) setTab('today');
  }, [tab, settings.coachEnabled]);
 
  // Streak management
- useEffect( => {
- const t = today;
+ useEffect(() => {
+ const t = today();
  if (profile.lastActive && profile.lastActive !== t) {
  const last = new Date(profile.lastActive);
  const now = new Date(t);
  const diff = Math.floor((now - last) / (1000*60*60*24));
  if (diff > 1) {
- setProfile(p => ({.p, streak: 0 }));
+ setProfile(p => ({...p, streak: 0 }));
  }
  }
  }, []);
 
  const showToast = (message, xp) => {
  setToast({ message, xp });
- setTimeout( => setToast(null), 2500);
+ setTimeout(() => setToast(null), 2500);
  };
 
  const addXP = (amount, message) => {
- setProfile(p => ({.p, xp: p.xp + amount, lastActive: today }));
+ setProfile(p => ({...p, xp: p.xp + amount, lastActive: today() }));
  showToast(message, amount);
  };
 
  const markActive = (type) => {
- const t = today;
+ const t = today();
  setHistory(prev => {
  const acts = prev[t] || [];
- if (!acts.includes(type)) return {.prev, [t]: [.acts, type] };
+ if (!acts.includes(type)) return {...prev, [t]: [...acts, type] };
  return prev;
  });
  // Update streak
@@ -160,7 +160,7 @@ export default function App {
  const now = new Date(t);
  const diff = Math.floor((now - last) / (1000*60*60*24));
  const newStreak = diff <= 1 ? p.streak + 1 : 1;
- return {.p, streak: newStreak, lastActive: t };
+ return {...p, streak: newStreak, lastActive: t };
  }
  return p;
  });
@@ -191,19 +191,19 @@ export default function App {
  const w = generateWorkout(profile.phase, profile.location, recentWorkouts, settings, overrides);
  const splitDayName = w._splitDay || 'full_body';
  // Filter to just exercise objects (strip _splitDay meta property)
- const exercises = [.w].filter(ex => ex && ex.id);
+ const exercises = [...w].filter(ex => ex && ex.id);
  
  setWorkout({
- date: today,
+ date: today(),
  splitDay: splitDayName,
- weekId: getWeekId,
+ weekId: getWeekId(),
  exercises,
  sessionRPE: null,
  durationMinutes: null,
  version: 2,
  });
  // Re-enable after a short delay to prevent rapid re-clicks
- setTimeout( => setIsGeneratingWorkout(false), 500);
+ setTimeout(() => setIsGeneratingWorkout(false), 500);
  };
 
  const handleUpdateExercise = (updatedEx, replaceId) => {
@@ -213,8 +213,8 @@ export default function App {
  // Auto-track workout start time on first set completion
  const hadAnyDone = workout.exercises.some(e => e.logSets?.some(s => s.done));
  const hasAnyDone = newExercises.some(e => e.logSets?.some(s => s.done));
- const startedAt = (!hadAnyDone && hasAnyDone && !workout.startedAt) ? Date.now : workout.startedAt;
- const newWorkout = {.workout, exercises: newExercises, startedAt };
+ const startedAt = (!hadAnyDone && hasAnyDone && !workout.startedAt) ? Date.now() : workout.startedAt;
+ const newWorkout = {...workout, exercises: newExercises, startedAt };
  setWorkout(newWorkout);
  if (replaceId && replaceId !== updatedEx.id) return;
  const oldEx = workout.exercises.find(e => e.id === updatedEx.id);
@@ -231,7 +231,7 @@ export default function App {
 
  const handleSessionMeta = ({ sessionRPE, durationMinutes, sessionNotes }) => {
  if (!workout) return;
- const update = {.workout };
+ const update = {...workout };
  if (sessionRPE !== undefined) update.sessionRPE = sessionRPE;
  if (durationMinutes !== undefined) update.durationMinutes = durationMinutes;
  if (sessionNotes !== undefined) update.sessionNotes = sessionNotes;
@@ -241,11 +241,11 @@ export default function App {
  const handleRemoveExercise = (exerciseId) => {
  if (!workout?.exercises) return;
  const newExercises = workout.exercises.filter(ex => ex.id !== exerciseId);
- setWorkout({.workout, exercises: newExercises });
+ setWorkout({...workout, exercises: newExercises });
  };
 
  const handleToggleRehab = (id) => {
- const newStatus = {.rehabStatus, [id]: !rehabStatus[id] };
+ const newStatus = {...rehabStatus, [id]: !rehabStatus[id] };
  setRehabStatus(newStatus);
  
  if (!rehabStatus[id]) {
@@ -258,8 +258,8 @@ export default function App {
  };
 
  const handleLogCardio = (cardio, duration, hr) => {
- const entry = { id: cardio.id, name: cardio.name, duration, hr, date: new Date.toISOString };
- setCardioLog(prev => [.prev, entry]);
+ const entry = { id: cardio.id, name: cardio.name, duration, hr, date: new Date().toISOString() };
+ setCardioLog(prev => [...prev, entry]);
  addXP(XP_REWARDS.cardio, `${cardio.name} logged!`);
  markActive('cardio');
  };
@@ -271,7 +271,7 @@ export default function App {
 
  // Update streaks
  setProfile(p => {
- let streaks = {.(p.streaks || DEFAULT_STREAKS) };
+ let streaks = {...(p.streaks || DEFAULT_STREAKS) };
  let xpToAdd = 0;
  
  if (log.weight) {
@@ -294,7 +294,7 @@ export default function App {
  if (combined === 7) xpToAdd += BODY_XP.streak7;
  if (combined === 30) xpToAdd += BODY_XP.streak30;
 
- return {.p, streaks, xp: p.xp + xpToAdd, lastActive: today };
+ return {...p, streaks, xp: p.xp + xpToAdd, lastActive: today() };
  });
 
  if (log.weight || (log.calories && log.protein)) {
@@ -304,27 +304,27 @@ export default function App {
  // Auto-add calibration point if DEXA
  if (calPoint) {
  setCalibration(prev => {
- const pts = [.(prev.points || []), calPoint];
+ const pts = [...(prev.points || []), calPoint];
  pts.sort((a, b) => a.date.localeCompare(b.date));
- return recalcCalibration({.prev, points: pts });
+ return recalcCalibration({...prev, points: pts });
  });
  }
 
  // Update TDEE if we have enough data
- const allLogs = loadBodyLogs;
+ const allLogs = loadBodyLogs();
  const { tdee, confidence } = updateExpenditure(allLogs, nutritionConfig);
  if (tdee !== nutritionConfig.estimatedTDEE) {
  setNutritionConfig(prev => ({
-.prev,
+...prev,
  estimatedTDEE: tdee,
  tdeeConfidence: confidence,
- tdeeHistory: [.(prev.tdeeHistory || []), { date: log.date, value: tdee }].slice(-365),
+ tdeeHistory: [...(prev.tdeeHistory || []), { date: log.date, value: tdee }].slice(-365),
  }));
  }
  };
 
  const updateProfile = (updates) => {
- setProfile(p => ({.p,.updates }));
+ setProfile(p => ({...p,...updates }));
  if (updates.phase || updates.location) {
  setWorkout(null); // Reset workout when settings change
  }
@@ -337,7 +337,7 @@ export default function App {
  { id:'rehab', icon:Heart, label:'Rehab' },
  { id:'cardio', icon:Activity, label:'Cardio' },
  { id:'progress', icon:TrendingUp, label:'Progress' },
-.(settings.coachEnabled ? [{ id:'coach', icon:MessageCircle, label:'Coach' }] : []),
+...(settings.coachEnabled ? [{ id:'coach', icon:MessageCircle, label:'Coach' }] : []),
  ];
 
  return (
@@ -377,7 +377,7 @@ export default function App {
  WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
  NeuroRehab
  </h1>
- <button onClick={ => goToSettings('training')} style={{
+ <button onClick={() => goToSettings('training')} style={{
  fontSize:'11px', color:T.text3, marginTop:'1px', textTransform:'uppercase', letterSpacing:'0.5px',
  background:'none', border:'none', cursor:'pointer', padding:0,
  }}>
@@ -396,7 +396,7 @@ export default function App {
  <Zap size={14} color={T.accent} />
  <span style={{ fontSize:'12px', fontWeight:600, fontFamily:T.mono }}>{profile.xp}</span>
  </div>
- <button onClick={ => goToSettings} style={{
+ <button onClick={() => goToSettings()} style={{
  background:tab === 'settings' ? T.accentSoft : 'none', border:'none', cursor:'pointer',
  padding:'6px', borderRadius:'8px', display:'flex', alignItems:'center', transition:'all 0.2s',
  }}>
@@ -407,7 +407,7 @@ export default function App {
  </div>
 
  {/* STORAGE WARNING */}
- {(LS._quotaExceeded || LS.getUsageKB > 4000) && (
+ {(LS._quotaExceeded || LS.getUsageKB() > 4000) && (
  <div style={{
  margin:'0 20px 8px', padding:'10px 14px', borderRadius:T.radiusSm,
  background:'rgba(255,82,82,0.08)', border:'1px solid rgba(255,82,82,0.2)',
@@ -416,9 +416,9 @@ export default function App {
  <AlertTriangle size={16} />
  <div style={{ flex:1 }}>
  <strong>{LS._quotaExceeded ? 'Storage full!' : 'Storage nearly full'}</strong>
- {' — '}({LS.getUsageKB}KB used). Export your data in Settings to avoid data loss.
+ {' — '}({LS.getUsageKB()}KB used). Export your data in Settings to avoid data loss.
  </div>
- <button onClick={ => goToSettings('data')} style={{
+ <button onClick={() => goToSettings('data')} style={{
  background:'none', border:`1px solid ${T.danger}`, borderRadius:'6px',
  padding:'4px 10px', color:T.danger, fontSize:'11px', fontWeight:600, cursor:'pointer',
  }}>Export</button>
@@ -434,7 +434,7 @@ export default function App {
  onSessionMeta={handleSessionMeta} onAddXP={addXP} goToSettings={goToSettings}
  nutritionConfig={nutritionConfig} calibration={calibration} onSaveBodyLog={handleSaveBodyLog}
  isGeneratingWorkout={isGeneratingWorkout}
- restTimers={restTimers} onRestTimerChange={(exId, endTime) => setRestTimers(prev => endTime ? {.prev, [exId]: endTime } : ( => { const n = {.prev }; delete n[exId]; return n; }))} />
+ restTimers={restTimers} onRestTimerChange={(exId, endTime) => setRestTimers(prev => endTime ? {...prev, [exId]: endTime } : (() => { const n = {...prev }; delete n[exId]; return n; })())} />
  )}
  {tab === 'rehab' && (
  <RehabTab rehabStatus={rehabStatus} onToggle={handleToggleRehab} />
@@ -446,7 +446,7 @@ export default function App {
  <ProgressTab profile={profile} history={history} goToSettings={goToSettings}
  coachEnabled={settings.coachEnabled} settings={settings} coachCfg={coachCfg}
  nutritionConfig={nutritionConfig} onUpdateNutritionConfig={setNutritionConfig}
- goToToday={ => setTab('today')} />
+ goToToday={() => setTab('today')} />
  )}
  {tab === 'coach' && settings.coachEnabled && (
  <CoachTab profile={profile} workout={workout} rehabStatus={rehabStatus} cardioLog={cardioLog}
@@ -474,7 +474,7 @@ export default function App {
  const Icon = t_item.icon;
  const active = tab === t_item.id;
  return (
- <button key={t_item.id} onClick={ => setTab(t_item.id)}
+ <button key={t_item.id} onClick={() => setTab(t_item.id)}
  aria-label={`${t_item.label} tab`}
  aria-current={active ? 'page' : undefined}
  style={{

@@ -20,11 +20,11 @@ export function CircularTimer({ duration, timeLeft, size = 56, strokeWidth = 3 }
 
 export function WorkoutTimerBar({ startedAt }) {
  const [elapsed, setElapsed] = useState(0);
- useEffect( => {
+ useEffect(() => {
  if (!startedAt) return;
- setElapsed(Math.floor((Date.now - startedAt) / 1000));
- const iv = setInterval( => setElapsed(Math.floor((Date.now - startedAt) / 1000)), 1000);
- return => clearInterval(iv);
+ setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+ const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+ return () => clearInterval(iv);
  }, [startedAt]);
  if (!startedAt) return null;
  const mins = Math.floor(elapsed / 60);
@@ -46,49 +46,49 @@ export function WorkoutTimerBar({ startedAt }) {
 
 export default function RestTimer({ endTime, duration, onComplete, onPauseState, vibrate = true }) {
  // Timestamp-based timer: survives unmount/remount because endTime is in parent state
- const [now, setNow] = useState(Date.now);
+ const [now, setNow] = useState(Date.now());
  const [paused, setPaused] = useState(false);
  const [pausedRemaining, setPausedRemaining] = useState(null); // ms remaining when paused
  const [finished, setFinished] = useState(false);
  const completedRef = useRef(false);
 
- useEffect( => {
+ useEffect(() => {
  if (paused || finished) return;
- const tick = setInterval( => setNow(Date.now), 250); // 250ms for smoother visual
- return => clearInterval(tick);
+ const tick = setInterval(() => setNow(Date.now()), 250); // 250ms for smoother visual
+ return () => clearInterval(tick);
  }, [paused, finished]);
 
  const timeLeftMs = paused ? (pausedRemaining || 0) : Math.max(0, endTime - now);
  const timeLeft = Math.ceil(timeLeftMs / 1000);
 
- useEffect( => {
+ useEffect(() => {
  if (timeLeft <= 0 && !finished && !paused && !completedRef.current) {
  completedRef.current = true;
  setFinished(true);
  if (vibrate && navigator.vibrate) {
  try { navigator.vibrate([150, 80, 150]); } catch(e) {}
  }
- setTimeout( => { onComplete?.; }, 3000);
+ setTimeout(() => { onComplete?.(); }, 3000);
  }
  }, [timeLeft, finished, paused, onComplete, vibrate]);
 
- const handlePause = => {
+ const handlePause = () => {
  if (paused) {
  // Resume: tell parent to set a new endTime
- const newEndTime = Date.now + (pausedRemaining || 0);
+ const newEndTime = Date.now() + (pausedRemaining || 0);
  setPaused(false);
  setPausedRemaining(null);
  onPauseState?.(newEndTime); // parent updates endTime
  } else {
  // Pause: capture remaining time
- const remaining = Math.max(0, endTime - Date.now);
+ const remaining = Math.max(0, endTime - Date.now());
  setPaused(true);
  setPausedRemaining(remaining);
  }
  };
 
- const handleReset = => {
- const newEndTime = Date.now + duration * 1000;
+ const handleReset = () => {
+ const newEndTime = Date.now() + duration * 1000;
  setPaused(false);
  setPausedRemaining(null);
  setFinished(false);
@@ -104,13 +104,13 @@ export default function RestTimer({ endTime, duration, onComplete, onPauseState,
  background: finished ? 'rgba(0,230,118,0.08)' : T.bgCard,
  borderRadius: T.radiusSm, border:`1px solid ${finished ? 'rgba(0,230,118,0.25)' : T.border}`,
  transition:'all 0.4s ease', animation: finished ? 'timerPulse 1.5s ease-in-out 2' : 'none',
- }} role="timer" aria-live="polite" aria-label={finished ? 'Rest complete' : `Rest timer: ${min}:${sec.toString.padStart(2,'0')} remaining`}>
+ }} role="timer" aria-live="polite" aria-label={finished ? 'Rest complete' : `Rest timer: ${min}:${sec.toString().padStart(2,'0')} remaining`}>
  <div style={{ position:'relative', width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center' }}>
  <CircularTimer duration={duration} timeLeft={timeLeft} size={48} />
  <span style={{ position:'absolute', fontSize:'11px', fontFamily:T.mono,
  color: finished ? T.success : timeLeft > 10 ? T.teal : T.accent,
  fontWeight: finished ? 700 : 400 }}>
- {finished ? '✓' : `${min}:${sec.toString.padStart(2,'0')}`}
+ {finished ? '✓' : `${min}:${sec.toString().padStart(2,'0')}`}
  </span>
  </div>
  <span style={{ fontSize:'13px', color: finished ? T.success : T.text2, flex:1, fontWeight: finished ? 600 : 400 }}>
@@ -128,7 +128,7 @@ export default function RestTimer({ endTime, duration, onComplete, onPauseState,
  </>
  )}
  {finished && (
- <button onClick={ => onComplete?.} aria-label="Dismiss rest timer" style={{ background:'none', border:'none', color:T.text3, cursor:'pointer', padding:'8px', fontSize:'12px' }}>
+ <button onClick={() => onComplete?.()} aria-label="Dismiss rest timer" style={{ background:'none', border:'none', color:T.text3, cursor:'pointer', padding:'8px', fontSize:'12px' }}>
  Dismiss
  </button>
  )}

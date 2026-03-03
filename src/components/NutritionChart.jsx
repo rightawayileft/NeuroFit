@@ -11,23 +11,23 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  const [hoverIdx, setHoverIdx] = useState(null);
  const cfg = nutritionConfig || DEFAULT_NUTRITION_CONFIG;
 
- const chartData = useMemo( => {
- return (allBodyLogs || loadAllBodyLogs).filter(l => l.calories).map(l => ({
+ const chartData = useMemo(() => {
+ return (allBodyLogs || loadAllBodyLogs()).filter(l => l.calories).map(l => ({
  date: l.date,
  calories: Number(l.calories),
  protein: l.protein ? Number(l.protein) : null,
  }));
  }, [allBodyLogs]);
 
- const filteredData = useMemo( => {
+ const filteredData = useMemo(() => {
  if (chartData.length === 0) return [];
  const ranges = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 99999 };
- const cutoff = subtractDays(today, ranges[range] || 30);
+ const cutoff = subtractDays(today(), ranges[range] || 30);
  return chartData.filter(d => d.date >= cutoff);
  }, [chartData, range]);
 
  // 7-day rolling average
- const rollingAvg = useMemo( => {
+ const rollingAvg = useMemo(() => {
  if (chartData.length < 2) return [];
  return filteredData.map((d, i) => {
  // Look back 7 days in the full dataset
@@ -99,14 +99,14 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  }).join(' ') : '';
 
  // 7-day average band
- const avgBandPath = rollingAvg.length >= 2 ? ( => {
+ const avgBandPath = rollingAvg.length >= 2 ? (() => {
  const top = rollingAvg.map((r, ri) => {
  const fi = filteredData.findIndex(d => d.date === r.date);
  if (fi < 0) return null;
  return `${ri === 0 ? 'M' : 'L'}${xPos(fi).toFixed(1)},${yCal(r.avg).toFixed(1)}`;
  }).filter(Boolean).join(' ');
  return top;
- }) : '';
+ })() : '';
 
  // Y-axis labels (calories)
  const ySteps = 5;
@@ -130,7 +130,7 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  <h3 style={{ fontSize: '15px', fontWeight: 600 }}>Nutrition</h3>
  <div style={{ display: 'flex', gap: '3px' }}>
  {['1W', '1M', '3M', '6M', '1Y', 'All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding: '6px 10px', borderRadius: '6px', border: 'none', fontSize: '10px', fontWeight: 600, cursor: 'pointer', minHeight: '32px',
  background: range === r ? T.accentSoft : 'transparent',
  color: range === r ? T.accent : T.text3,
@@ -142,7 +142,7 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  <GlassCard animate={false} style={{ padding: '12px 8px 8px', overflow: 'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}
  role="img" aria-label={`Nutrition tracking chart showing calories and protein over ${range}`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
 
  {/* Grid */}
  {yLabels.map((l, i) => (
@@ -181,7 +181,7 @@ export default function NutritionChart({ nutritionConfig, goToToday, allBodyLogs
  <rect key={i} x={xPos(i) - barW / 2} y={Math.min(yCal(d.calories), yCal(0))}
  width={barW} height={Math.abs(yCal(d.calories) - yCal(minCal > 0 ? minCal : 0))}
  fill={barColor(d.calories)} opacity="0.55" rx="1"
- onMouseEnter={ => setHoverIdx(i)} onTouchStart={ => setHoverIdx(i)} />
+ onMouseEnter={() => setHoverIdx(i)} onTouchStart={() => setHoverIdx(i)} />
  ))}
 
  {/* Protein line */}

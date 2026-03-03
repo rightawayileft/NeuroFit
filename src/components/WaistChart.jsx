@@ -9,23 +9,23 @@ export default function WaistChart({ settings, nutritionConfig, allBodyLogs }) {
  const [hoverIdx, setHoverIdx] = useState(null);
  const waistUnit = nutritionConfig?.waistUnit || 'in';
 
- const chartData = useMemo( => {
- return (allBodyLogs || loadAllBodyLogs).filter(l => l.waistCircumference).map(l => ({
+ const chartData = useMemo(() => {
+ return (allBodyLogs || loadAllBodyLogs()).filter(l => l.waistCircumference).map(l => ({
  date: l.date,
  waist: Number(l.waistCircumference),
  }));
  }, [allBodyLogs]);
 
- const filteredData = useMemo( => {
+ const filteredData = useMemo(() => {
  if (chartData.length === 0) return [];
  const ranges = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 99999 };
- const cutoff = subtractDays(today, ranges[range] || 90);
+ const cutoff = subtractDays(today(), ranges[range] || 90);
  return chartData.filter(d => d.date >= cutoff);
  }, [chartData, range]);
 
  // Waist-to-height ratio
  const heightInches = settings?.heightInches ? Number(settings.heightInches) : null;
- const whrText = useMemo( => {
+ const whrText = useMemo(() => {
  if (!heightInches || chartData.length === 0) return null;
  const latest = chartData[chartData.length - 1].waist;
  const heightCm = heightInches * 2.54; // heightInches is always stored in inches
@@ -71,11 +71,11 @@ export default function WaistChart({ settings, nutritionConfig, allBodyLogs }) {
  const xStep = Math.max(1, Math.floor((filteredData.length - 1) / Math.max(xLabelCount - 1, 1)));
 
  // Deltas
- const deltas = useMemo( => {
+ const deltas = useMemo(() => {
  if (chartData.length < 2) return [];
  const latest = chartData[chartData.length - 1].waist;
  return [7, 30, 90].map(d => {
- const cutoff = subtractDays(today, d);
+ const cutoff = subtractDays(today(), d);
  const past = chartData.find(s => s.date >= cutoff);
  if (!past) return null;
  const delta = Math.round((latest - past.waist) * 10) / 10;
@@ -99,7 +99,7 @@ export default function WaistChart({ settings, nutritionConfig, allBodyLogs }) {
  </div>
  <div style={{ display: 'flex', gap: '3px' }}>
  {['1M', '3M', '6M', '1Y', 'All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding: '6px 10px', borderRadius: '6px', border: 'none', fontSize: '10px', fontWeight: 600, cursor: 'pointer', minHeight: '32px',
  background: range === r ? T.accentSoft : 'transparent',
  color: range === r ? T.accent : T.text3,
@@ -111,7 +111,7 @@ export default function WaistChart({ settings, nutritionConfig, allBodyLogs }) {
  <GlassCard animate={false} style={{ padding: '12px 8px 8px', overflow: 'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}
  role="img" aria-label={`Waist measurement trend chart over ${range}`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
  <defs>
  <linearGradient id="waistGrad" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={T.accent} stopOpacity="0.12" />
@@ -134,7 +134,7 @@ export default function WaistChart({ settings, nutritionConfig, allBodyLogs }) {
  {/* Dots */}
  {filteredData.map((d, i) => (
  <circle key={i} cx={xPos(i)} cy={yPos(d.waist)} r="2.5" fill={T.text3} opacity="0.4"
- onMouseEnter={ => setHoverIdx(i)} onTouchStart={ => setHoverIdx(i)} />
+ onMouseEnter={() => setHoverIdx(i)} onTouchStart={() => setHoverIdx(i)} />
  ))}
 
  {/* X-axis */}

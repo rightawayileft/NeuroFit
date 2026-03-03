@@ -8,7 +8,7 @@ import { getCalibratedBodyFat } from '@/lib/bodyFatCalibration';
 import GlassCard from '@/components/GlassCard';
 
 function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave, onAddXP }) {
- const [selectedDate, setSelectedDate] = useState(today);
+ const [selectedDate, setSelectedDate] = useState(today());
  const existing = LS.get(`bodyLog:${selectedDate}`, null);
  const prevLog = LS.get(`bodyLog:${subtractDays(selectedDate, 1)}`, null);
 
@@ -27,7 +27,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  const [saved, setSaved] = useState(!!existing);
 
  // Reset form when date changes
- useEffect( => {
+ useEffect(() => {
  const log = LS.get(`bodyLog:${selectedDate}`, null);
  const prev = LS.get(`bodyLog:${subtractDays(selectedDate, 1)}`, null);
  setWeight(log?.weight != null ? String(log.weight) : (prev?.weight ? String(prev.weight) : ''));
@@ -50,7 +50,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  const streaks = profile?.streaks || DEFAULT_STREAKS;
  const combinedStreak = streaks.combined?.current || 0;
 
- const handleSave = => {
+ const handleSave = () => {
  // Sanitize numeric inputs: reject non-positive weight, clamp calories
  const parsedWeight = weight ? Number(weight) : null;
  const parsedCals = calories ? Number(calories) : null;
@@ -82,7 +82,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  hrv: hrv ? Number(hrv) : null,
  } : null,
  notes: notes || '',
- timestamp: Date.now,
+ timestamp: Date.now(),
  };
 
  // If DEXA source and we have a BIA reading too, auto-add calibration point
@@ -96,8 +96,8 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
 
  const wUnit = settings?.weightUnit || 'lbs';
  const waistUnit = nutritionConfig?.waistUnit || 'in';
- const isToday = selectedDate === today;
- const isYesterday = selectedDate === subtractDays(today, 1);
+ const isToday = selectedDate === today();
+ const isYesterday = selectedDate === subtractDays(today(), 1);
 
  const InputField = ({ icon, label, value, onChange, unit, inputMode = 'decimal', placeholder }) => (
  <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:`1px solid ${T.border}` }}>
@@ -127,7 +127,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  <span style={{ fontSize:'15px', fontWeight:600 }}>Daily Log</span>
  </div>
  <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
- <button onClick={ => setSelectedDate(subtractDays(selectedDate, 1))}
+ <button onClick={() => setSelectedDate(subtractDays(selectedDate, 1))}
  aria-label="Previous day"
  style={{ padding:'8px', borderRadius:'6px', border:'none', fontSize:'14px', cursor:'pointer',
  background:'rgba(255,255,255,0.04)', color:T.text3, lineHeight:1, minWidth:'44px', minHeight:'44px',
@@ -136,7 +136,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  </button>
  <div style={{ position:'relative' }}>
  <input type="date" value={selectedDate}
- max={today}
+ max={today()}
  onChange={e => { if (e.target.value) setSelectedDate(e.target.value); }}
  aria-label="Select log date"
  style={{
@@ -146,12 +146,12 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  }} />
  </div>
  {!isToday && (
- <button onClick={ => setSelectedDate(today)}
+ <button onClick={() => setSelectedDate(today())}
  style={{ padding:'8px 12px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:600,
  cursor:'pointer', background:T.accentSoft, color:T.accent, minHeight:'36px' }}>Today</button>
  )}
- {selectedDate !== subtractDays(today, 1) && !isToday && (
- <button onClick={ => setSelectedDate(subtractDays(today, 1))}
+ {selectedDate !== subtractDays(today(), 1) && !isToday && (
+ <button onClick={() => setSelectedDate(subtractDays(today(), 1))}
  style={{ padding:'8px 12px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:500,
  cursor:'pointer', background:'rgba(255,255,255,0.04)', color:T.text3, minHeight:'36px' }}>Yest.</button>
  )}
@@ -163,7 +163,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  <div style={{ fontSize:'11px', color: isYesterday ? T.teal : T.warn, marginBottom:'8px',
  padding:'4px 8px', borderRadius:'6px',
  background: isYesterday ? 'rgba(78,205,196,0.06)' : 'rgba(255,183,77,0.06)' }}>
- {isYesterday ? '📝 Logging for yesterday' : `📝 Logging for ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year: new Date(selectedDate).getFullYear !== new Date.getFullYear ? 'numeric' : undefined })}`}
+ {isYesterday ? '📝 Logging for yesterday' : `📝 Logging for ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year: new Date(selectedDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })}`}
  </div>
  )}
 
@@ -223,7 +223,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  )}
 
  {/* Expandable optional fields */}
- <button onClick={ => setShowMore(!showMore)} aria-expanded={showMore} style={{
+ <button onClick={() => setShowMore(!showMore)} aria-expanded={showMore} style={{
  background:'none', border:'none', color:T.text3, fontSize:'13px', cursor:'pointer',
  padding:'12px 8px', display:'flex', alignItems:'center', gap:'6px', width:'100%',
  minHeight:'44px',
@@ -250,7 +250,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  </div>
  <div style={{ display:'flex', gap:'6px', padding:'8px 0 8px 34px' }} role="group" aria-label="Sleep quality">
  {['poor','fair','good','excellent'].map(q => (
- <button key={q} onClick={ => setSleepQuality(sleepQuality === q ? null : q)} aria-pressed={sleepQuality === q} aria-label={`Sleep quality: ${q}`} style={{
+ <button key={q} onClick={() => setSleepQuality(sleepQuality === q ? null : q)} aria-pressed={sleepQuality === q} aria-label={`Sleep quality: ${q}`} style={{
  padding:'8px 12px', borderRadius:'6px', fontSize:'11px', fontWeight:500, border:'none', cursor:'pointer',
  background: sleepQuality === q ? T.tealGlow : 'rgba(255,255,255,0.04)',
  color: sleepQuality === q ? T.teal : T.text3,

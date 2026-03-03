@@ -24,16 +24,16 @@ const MetricPicker = ({ value, onChange, exclude }) => {
  const selected = OVERLAY_METRICS.find(m => m.key === value) || OVERLAY_METRICS[0];
  const options = OVERLAY_METRICS.filter(m => m.key !== exclude);
 
- useEffect( => {
+ useEffect(() => {
  if (!open) return;
  const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
  document.addEventListener('mousedown', handler);
- return => document.removeEventListener('mousedown', handler);
+ return () => document.removeEventListener('mousedown', handler);
  }, [open]);
 
  return (
  <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
- <button onClick={ => setOpen(o => !o)} style={{
+ <button onClick={() => setOpen(o => !o)} style={{
  display: 'flex', alignItems: 'center', gap: '5px',
  background: open ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)',
  border: `1px solid ${open ? T.tealGlow : T.border}`, borderRadius: '16px',
@@ -52,7 +52,7 @@ const MetricPicker = ({ value, onChange, exclude }) => {
  padding: '4px', minWidth: '150px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
  }}>
  {options.map(m => (
- <button key={m.key} onClick={ => { onChange(m.key); setOpen(false); }} style={{
+ <button key={m.key} onClick={() => { onChange(m.key); setOpen(false); }} style={{
  display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
  padding: '7px 10px', border: 'none', borderRadius: '7px', cursor: 'pointer',
  background: m.key === value ? 'rgba(78,205,196,0.12)' : 'transparent',
@@ -83,8 +83,8 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  const waistUnit = cfg.waistUnit || 'in';
 
  // Build all metric series from body logs and TDEE history
- const allSeries = useMemo( => {
- const logs = allBodyLogs || loadAllBodyLogs;
+ const allSeries = useMemo(() => {
+ const logs = allBodyLogs || loadAllBodyLogs();
  const weightLogs = bodyLogs || logs.filter(l => l.weight);
  const smoothed = weightLogs.length >= 2 ? smoothEWMA(weightLogs) : [];
 
@@ -124,16 +124,16 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  }, [cfg.tdeeHistory, allBodyLogs, bodyLogs]);
 
  // Filter by time range and align dates
- const { primaryData, secondaryData, alignedDates } = useMemo( => {
+ const { primaryData, secondaryData, alignedDates } = useMemo(() => {
  const ranges = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 99999 };
- const cutoff = subtractDays(today, ranges[range] || 30);
+ const cutoff = subtractDays(today(), ranges[range] || 30);
 
  const pRaw = (allSeries[primaryKey] || []).filter(d => d.date >= cutoff);
  const sRaw = (allSeries[secondaryKey] || []).filter(d => d.date >= cutoff);
 
  // Build union of all dates, sorted
- const dateSet = new Set([.pRaw.map(d => d.date),.sRaw.map(d => d.date)]);
- const dates = [.dateSet].sort;
+ const dateSet = new Set([...pRaw.map(d => d.date),...sRaw.map(d => d.date)]);
+ const dates = [...dateSet].sort();
 
  // Build lookup maps
  const pMap = pRaw.reduce((m, d) => { m[d.date] = d.value; return m; }, {});
@@ -154,7 +154,7 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  const sUnit = secondaryKey === 'weight' ? weightUnit : secondaryKey === 'waist' ? waistUnit : secondaryMeta.unit;
 
  // Pearson correlation coefficient (only when 14+ overlapping data points)
- const correlation = useMemo( => {
+ const correlation = useMemo(() => {
  const paired = primaryData
 .map((p, i) => ({ p: p.value, s: secondaryData[i]?.value }))
 .filter(d => d.p != null && d.s != null);
@@ -193,12 +193,12 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  const pVals = primaryData.filter(d => d.value != null).map(d => d.value);
  const sVals = secondaryData.filter(d => d.value != null).map(d => d.value);
 
- const pMin = pVals.length > 0 ? Math.min(.pVals) : 0;
- const pMax = pVals.length > 0 ? Math.max(.pVals) : 1;
+ const pMin = pVals.length > 0 ? Math.min(...pVals) : 0;
+ const pMax = pVals.length > 0 ? Math.max(...pVals) : 1;
  const pPad = (pMax - pMin) * 0.08 || 1;
 
- const sMin = sVals.length > 0 ? Math.min(.sVals) : 0;
- const sMax = sVals.length > 0 ? Math.max(.sVals) : 1;
+ const sMin = sVals.length > 0 ? Math.min(...sVals) : 0;
+ const sMax = sVals.length > 0 ? Math.max(...sVals) : 1;
  const sPad = (sMax - sMin) * 0.08 || 1;
 
  const pMinY = pMin - pPad, pMaxY = pMax + pPad, pRange = pMaxY - pMinY || 1;
@@ -250,7 +250,7 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  </div>
  <div style={{ display: 'flex', gap: '3px' }}>
  {['1W','1M','3M','6M','1Y','All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding: '3px 7px', borderRadius: '6px', fontSize: '10px', fontFamily: T.mono,
  border: 'none', cursor: 'pointer', transition: 'all 0.2s',
  background: range === r ? T.accentSoft : 'rgba(255,255,255,0.04)',
@@ -294,14 +294,14 @@ function MultiMetricOverlay({ settings, nutritionConfig, allBodyLogs, bodyLogs }
  const idx = Math.round(((x - PAD.left) / cW) * (n - 1));
  setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
  }}
- onMouseLeave={ => setHoverIdx(null)}
+ onMouseLeave={() => setHoverIdx(null)}
  onTouchMove={(e) => {
  const rect = e.currentTarget.getBoundingClientRect;
  const x = ((e.touches[0].clientX - rect.left) / rect.width) * W;
  const idx = Math.round(((x - PAD.left) / cW) * (n - 1));
  setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
  }}
- onTouchEnd={ => setHoverIdx(null)}
+ onTouchEnd={() => setHoverIdx(null)}
  >
  {/* Grid lines */}
  {pLabels.map((l, i) => (

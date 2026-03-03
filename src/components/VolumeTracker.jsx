@@ -11,14 +11,14 @@ function VolumeTracker({ history, settings }) {
  const [expandedMuscle, setExpandedMuscle] = useState(null);
 
  // Compute weekly completed sets per primaryMuscleGroup
- const weeklyVolume = useMemo( => {
+ const weeklyVolume = useMemo(() => {
  const volume = {};
- const now = new Date;
+ const now = new Date();
  const firstDay = settings?.firstDayOfWeek ?? 0;
  const weekStart = new Date(now);
- const currentDay = weekStart.getDay;
+ const currentDay = weekStart.getDay();
  const daysBack = (currentDay - firstDay + 7) % 7;
- weekStart.setDate(weekStart.getDate - daysBack);
+ weekStart.setDate(weekStart.getDate() - daysBack);
  weekStart.setHours(0, 0, 0, 0);
 
  const keys = LS.keys('workout:');
@@ -98,7 +98,7 @@ function VolumeTracker({ history, settings }) {
  return (
  <div key={muscle} style={{ marginBottom: '6px' }}>
  <div
- onClick={ => hasSubgroups && setExpandedMuscle(isExpanded ? null : muscle)}
+ onClick={() => hasSubgroups && setExpandedMuscle(isExpanded ? null : muscle)}
  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: hasSubgroups ? 'pointer' : 'default', padding: '4px 0' }}
  >
  <div style={{ width: '72px', fontSize: '11px', fontWeight: 600, color: T.text2, textTransform: 'capitalize', flexShrink: 0 }}>

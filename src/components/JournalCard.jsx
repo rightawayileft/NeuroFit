@@ -12,7 +12,7 @@ function JournalCard({ workout }) {
  const [showAll, setShowAll] = useState(false);
 
  // Load recent entries on mount/open
- useEffect( => {
+ useEffect(() => {
  if (!isOpen) return;
  const entries = [];
  const keys = LS.keys('journal:');
@@ -20,14 +20,14 @@ function JournalCard({ workout }) {
  for (const key of sortedKeys) {
  const dayEntries = LS.get(key, []);
  if (Array.isArray(dayEntries)) {
- entries.push(.dayEntries.map(e => ({.e, _date: key.replace('journal:', '') })));
+ entries.push(...dayEntries.map(e => ({...e, _date: key.replace('journal:', '') })));
  }
  }
  entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
  setRecentEntries(entries);
  }, [isOpen, newEntry]); // re-load after adding
 
- const getCurrentContext = => {
+ const getCurrentContext = () => {
  const ctx = { phase: null, splitDay: null, exerciseName: null, exerciseId: null };
  if (workout?.exercises) {
  ctx.splitDay = workout.splitDay?.replace(/_/g, ' ') || null;
@@ -37,7 +37,7 @@ function JournalCard({ workout }) {
  const total = ex.logSets?.length || 0;
  return done > 0 && done < total;
  });
- const lastDone = [.(workout.exercises || [])].reverse.find(ex =>
+ const lastDone = [...(workout.exercises || [])].reverse().find(ex =>
  ex.logSets?.some(s => s.done)
  );
  const current = inProgress || lastDone;
@@ -49,23 +49,23 @@ function JournalCard({ workout }) {
  return ctx;
  };
 
- const handleAdd = => {
- if (!newEntry.trim) return;
- const todayStr = today;
+ const handleAdd = () => {
+ if (!newEntry.trim()) return;
+ const todayStr = today();
  const ctx = getCurrentContext;
  const entry = {
- id: `j_${Date.now}`,
- timestamp: Date.now,
- text: newEntry.trim,
+ id: `j_${Date.now()}`,
+ timestamp: Date.now(),
+ text: newEntry.trim(),
  tags: {
  splitDay: ctx.splitDay || null,
  exerciseName: ctx.exerciseName || null,
  exerciseId: ctx.exerciseId || null,
- time: new Date.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }),
+ time: new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }),
  },
  };
  const existing = LS.get(`journal:${todayStr}`, []);
- const updated = Array.isArray(existing) ? [.existing, entry] : [entry];
+ const updated = Array.isArray(existing) ? [...existing, entry] : [entry];
  LS.set(`journal:${todayStr}`, updated);
  setNewEntry('');
  };
@@ -86,7 +86,7 @@ function JournalCard({ workout }) {
 
  return (
  <GlassCard style={{ marginBottom:'16px', padding: isOpen ? '16px' : '0', overflow:'hidden' }}>
- <button onClick={ => setIsOpen(!isOpen)} style={{
+ <button onClick={() => setIsOpen(!isOpen)} style={{
  width:'100%', padding: isOpen ? '0 0 12px' : '14px 16px', background:'none', border:'none',
  display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', color:T.text,
  }}>
@@ -119,7 +119,7 @@ function JournalCard({ workout }) {
  <textarea
  placeholder="How's the session going? Note form cues, pain, energy."
  value={newEntry} onChange={e => setNewEntry(e.target.value)}
- onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault; handleAdd; } }}
+ onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd(); } }}
  rows={2} aria-label="Workout journal entry"
  style={{
  flex:1, background:'rgba(255,255,255,0.04)', border:`1px solid ${T.border}`,
@@ -127,11 +127,11 @@ function JournalCard({ workout }) {
  fontFamily:T.font, outline:'none', resize:'none', lineHeight:1.4,
  }}
  />
- <button onClick={handleAdd} disabled={!newEntry.trim}
+ <button onClick={handleAdd} disabled={!newEntry.trim()}
  style={{
- width:'40px', borderRadius:'10px', border:'none', cursor: newEntry.trim ? 'pointer' : 'default',
- background: newEntry.trim ? T.tealGlow : 'rgba(255,255,255,0.02)',
- color: newEntry.trim ? T.teal : T.text3,
+ width:'40px', borderRadius:'10px', border:'none', cursor: newEntry.trim() ? 'pointer' : 'default',
+ background: newEntry.trim() ? T.tealGlow : 'rgba(255,255,255,0.02)',
+ color: newEntry.trim() ? T.teal : T.text3,
  display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', flexShrink:0,
  }}>
  <Send size={16} />
@@ -146,9 +146,9 @@ function JournalCard({ workout }) {
  </div>
  {displayEntries.map((entry, i) => {
  const entryDate = new Date(entry.timestamp);
- const isEntryToday = entry._date === today;
+ const isEntryToday = entry._date === today();
  const dateLabel = isEntryToday ? 'Today' :
- entry._date === subtractDays(today, 1) ? 'Yesterday' :
+ entry._date === subtractDays(today(), 1) ? 'Yesterday' :
  entryDate.toLocaleDateString('en-US', { month:'short', day:'numeric' });
 
  return (
@@ -176,7 +176,7 @@ function JournalCard({ workout }) {
  )}
  </div>
  </div>
- <button onClick={ => handleDelete(entry.id, entry._date)} style={{
+ <button onClick={() => handleDelete(entry.id, entry._date)} style={{
  background:'none', border:'none', cursor:'pointer', padding:'10px',
  color:T.text3, opacity:0.5, flexShrink:0, minWidth:'44px', minHeight:'44px',
  display:'flex', alignItems:'center', justifyContent:'center',
@@ -187,7 +187,7 @@ function JournalCard({ workout }) {
  );
  })}
  {recentEntries.length > 4 && (
- <button onClick={ => setShowAll(!showAll)} style={{
+ <button onClick={() => setShowAll(!showAll)} style={{
  background:'none', border:'none', color:T.teal, fontSize:'12px', cursor:'pointer',
  padding:'12px 0', width:'100%', textAlign:'center', minHeight:'44px',
  }}>

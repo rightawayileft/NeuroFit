@@ -154,7 +154,7 @@ export function SessionFeedbackCard({ allDone, exercises, workout, weightUnit = 
  }}>
  <Trophy size={14} style={{ color: '#FFD700' }} />
  <span style={{ fontSize:'13px', color:'#FFD700', fontWeight:600 }}>
- {sessionPRCount + ' Personal Record' + (sessionPRCount !== 1 ? 's' : '') + ' today!'}
+ {sessionPRCount + ' Personal Record' + (sessionPRCount !== 1 ? 's' : '') + ' today()!'}
  </span>
  </div>
  ) : null}

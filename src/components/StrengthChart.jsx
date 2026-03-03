@@ -12,7 +12,7 @@ function ExerciseProgressChart({ settings }) {
  const wUnit = settings?.weightUnit || 'lbs';
 
  // Build a list of exercises the user has history for, sorted by most recently trained
- const exerciseList = useMemo( => {
+ const exerciseList = useMemo(() => {
  const exMap = {};
  const keys = LS.keys('workout:').sort((a, b) => b.localeCompare(a));
  for (const key of keys) {
@@ -32,7 +32,7 @@ function ExerciseProgressChart({ settings }) {
  }, []);
 
  // Get data for the selected exercise
- const chartData = useMemo( => {
+ const chartData = useMemo(() => {
  if (!selectedExId) return [];
  const history = getExerciseHistory(selectedExId, 20);
  if (!history || history.length === 0) return [];
@@ -49,16 +49,16 @@ function ExerciseProgressChart({ settings }) {
  if (e > bestE1RM) bestE1RM = Math.round(e);
  }
  return { date: session.date, maxWeight, bestE1RM, totalVolume, maxReps, sets: sets.length };
- }).reverse; // Chronological order
+ }).reverse(); // Chronological order
  }, [selectedExId]);
 
  // All-time stats
- const stats = useMemo( => {
+ const stats = useMemo(() => {
  if (chartData.length === 0) return null;
  return {
- bestWeight: Math.max(.chartData.map(d => d.maxWeight)),
- bestE1RM: Math.max(.chartData.map(d => d.bestE1RM)),
- bestVolume: Math.max(.chartData.map(d => d.totalVolume)),
+ bestWeight: Math.max(...chartData.map(d => d.maxWeight)),
+ bestE1RM: Math.max(...chartData.map(d => d.bestE1RM)),
+ bestVolume: Math.max(...chartData.map(d => d.totalVolume)),
  totalSessions: chartData.length,
  firstDate: chartData[0]?.date,
  lastDate: chartData[chartData.length - 1]?.date,
@@ -83,11 +83,11 @@ function ExerciseProgressChart({ settings }) {
  const weights = data.map(d => d.maxWeight);
  const e1rms = data.map(d => d.bestE1RM);
  const volumes = data.map(d => d.totalVolume);
- const allYVals = [.weights,.e1rms].filter(v => v > 0);
- const minY = allYVals.length > 0 ? Math.floor(Math.min(.allYVals) * 0.9) : 0;
- const maxY = allYVals.length > 0 ? Math.ceil(Math.max(.allYVals) * 1.05) : 100;
+ const allYVals = [...weights,...e1rms].filter(v => v > 0);
+ const minY = allYVals.length > 0 ? Math.floor(Math.min(...allYVals) * 0.9) : 0;
+ const maxY = allYVals.length > 0 ? Math.ceil(Math.max(...allYVals) * 1.05) : 100;
  const yRange = maxY - minY || 1;
- const maxVol = Math.max(.volumes, 1);
+ const maxVol = Math.max(...volumes, 1);
 
  const xPos = (i) => PAD.left + (data.length > 1 ? (i / (data.length - 1)) * cW : cW / 2);
  const yPos = (v) => PAD.top + (1 - (v - minY) / yRange) * cH;
@@ -151,7 +151,7 @@ function ExerciseProgressChart({ settings }) {
  <Dumbbell size={20} style={{ marginBottom:'8px', opacity:0.5 }} />
  <div>1 session logged. Train again to see trends.</div>
  <div style={{ marginTop:'8px', fontSize:'12px', fontFamily:T.mono }}>
- Max: {data[0].maxWeight} {wUnit} · e1RM: {data[0].bestE1RM} {wUnit} · Vol: {data[0].totalVolume.toLocaleString}
+ Max: {data[0].maxWeight} {wUnit} · e1RM: {data[0].bestE1RM} {wUnit} · Vol: {data[0].totalVolume.toLocaleString()}
  </div>
  </div>
  )}
@@ -177,7 +177,7 @@ function ExerciseProgressChart({ settings }) {
  {/* SVG Chart */}
  <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}
  role="img" aria-label={`Strength progress chart for selected exercise`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
 
  <defs>
  <linearGradient id="exWeightGrad" x1="0" y1="0" x2="0" y2="1">
@@ -205,8 +205,8 @@ function ExerciseProgressChart({ settings }) {
  x={xPos(i) - barW / 2} y={PAD.top + cH - barH}
  width={barW} height={barH}
  fill="rgba(255,255,255,0.06)" rx="2"
- onMouseEnter={ => setHoverIdx(i)}
- onTouchStart={ => setHoverIdx(i)}
+ onMouseEnter={() => setHoverIdx(i)}
+ onTouchStart={() => setHoverIdx(i)}
  style={{ cursor:'pointer' }}
  />
  );
@@ -232,14 +232,14 @@ function ExerciseProgressChart({ settings }) {
  <g key={`dots-${i}`}>
  <circle cx={xPos(i)} cy={yPos(d.maxWeight)} r="3.5"
  fill={T.accent} stroke={T.bg} strokeWidth="1"
- onMouseEnter={ => setHoverIdx(i)}
- onTouchStart={ => setHoverIdx(i)}
+ onMouseEnter={() => setHoverIdx(i)}
+ onTouchStart={() => setHoverIdx(i)}
  style={{ cursor:'pointer' }} />
  {d.bestE1RM > 0 && (
  <circle cx={xPos(i)} cy={yPos(d.bestE1RM)} r="3"
  fill={T.teal} stroke={T.bg} strokeWidth="1"
- onMouseEnter={ => setHoverIdx(i)}
- onTouchStart={ => setHoverIdx(i)}
+ onMouseEnter={() => setHoverIdx(i)}
+ onTouchStart={() => setHoverIdx(i)}
  style={{ cursor:'pointer' }} />
  )}
  </g>
@@ -259,7 +259,7 @@ function ExerciseProgressChart({ settings }) {
  })}
 
  {/* Hover tooltip */}
- {hoverIdx !== null && data[hoverIdx] && ( => {
+ {hoverIdx !== null && data[hoverIdx] && (() => {
  const d = data[hoverIdx];
  const tx = Math.max(60, Math.min(xPos(hoverIdx), W - 60));
  return (
@@ -272,14 +272,14 @@ function ExerciseProgressChart({ settings }) {
  {d.maxWeight} {wUnit} · e1RM {d.bestE1RM}
  </text>
  <text x={tx} y={PAD.top + 20} fill={T.text3} fontSize="8" fontFamily={T.mono} textAnchor="middle">
- Vol: {d.totalVolume.toLocaleString} · {d.sets} sets
+ Vol: {d.totalVolume.toLocaleString()} · {d.sets} sets
  </text>
  <text x={tx} y={PAD.top + 32} fill={T.text3} fontSize="8" fontFamily={T.mono} textAnchor="middle">
  {new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' })}
  </text>
  </g>
  );
- })}
+ })()}
  </svg>
  </>
  )}
@@ -290,7 +290,7 @@ function ExerciseProgressChart({ settings }) {
  {[
  { label:'Best Weight', value:`${stats.bestWeight}`, sub:wUnit, color:T.accent },
  { label:'Best e1RM', value:`${stats.bestE1RM}`, sub:wUnit, color:T.teal },
- { label:'Best Volume', value: stats.bestVolume >= 10000 ? `${(stats.bestVolume/1000).toFixed(1)}k` : stats.bestVolume.toLocaleString, sub:wUnit, color:T.text2 },
+ { label:'Best Volume', value: stats.bestVolume >= 10000 ? `${(stats.bestVolume/1000).toFixed(1)}k` : stats.bestVolume.toLocaleString(), sub:wUnit, color:T.text2 },
  ].map((s, i) => (
  <div key={i} style={{
  background:'rgba(255,255,255,0.03)', borderRadius:'10px', padding:'10px 8px', textAlign:'center',

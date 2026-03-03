@@ -8,18 +8,18 @@ import GlassCard from '@/components/GlassCard';
 export default function WeightTrendChart({ settings, nutritionConfig, goToToday, bodyLogs }) {
  const [range, setRange] = useState('1M');
  const [hoverIdx, setHoverIdx] = useState(null);
- const allLogs = useMemo( => bodyLogs || loadBodyLogs, [bodyLogs]);
- const smoothed = useMemo( => getSmoothedWeights(allLogs, nutritionConfig), [allLogs, nutritionConfig]);
+ const allLogs = useMemo(() => bodyLogs || loadBodyLogs(), [bodyLogs]);
+ const smoothed = useMemo(() => getSmoothedWeights(allLogs, nutritionConfig), [allLogs, nutritionConfig]);
 
  // Filter by time range
- const filteredData = useMemo( => {
+ const filteredData = useMemo(() => {
  if (smoothed.length === 0) return [];
- const now = new Date;
+ const now = new Date();
  const ranges = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 730 };
  const days = ranges[range] || 30;
  const cutoff = new Date(now);
- cutoff.setDate(cutoff.getDate - days);
- const cutoffStr = cutoff.toISOString.split('T')[0];
+ cutoff.setDate(cutoff.getDate() - days);
+ const cutoffStr = cutoff.toISOString().split('T')[0];
  const filtered = smoothed.filter(d => d.date >= cutoffStr);
  // Limit data points for rendering performance
  if (filtered.length > 365) {
@@ -31,11 +31,11 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
  }, [smoothed, range]);
 
  // Delta indicators
- const deltas = useMemo( => {
+ const deltas = useMemo(() => {
  if (smoothed.length < 2) return [];
  const latest = smoothed[smoothed.length - 1]?.trend;
  return [3, 7, 14, 30, 90].map(d => {
- const cutoff = subtractDays(today, d);
+ const cutoff = subtractDays(today(), d);
  const past = smoothed.find(s => s.date >= cutoff);
  if (!past) return null;
  const delta = Math.round((latest - past.trend) * 10) / 10;
@@ -105,7 +105,7 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
  <h3 style={{ fontSize:'15px', fontWeight:600 }}>Weight Trend</h3>
  <div style={{ display:'flex', gap:'3px' }}>
  {['1W','1M','3M','6M','1Y','All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding:'6px 10px', borderRadius:'6px', border:'none', fontSize:'10px', fontWeight:600, cursor:'pointer', minHeight:'32px',
  background: range === r ? T.accentSoft : 'transparent',
  color: range === r ? T.accent : T.text3,
@@ -117,7 +117,7 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
  <GlassCard animate={false} style={{ padding:'12px 8px 8px', overflow:'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}
  role="img" aria-label={`Weight trend chart showing ${pts.length} data points over ${range}`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
  <defs>
  <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={T.accent} stopOpacity="0.15" />
@@ -151,8 +151,8 @@ export default function WeightTrendChart({ settings, nutritionConfig, goToToday,
  {filteredData.map((d, i) => (
  <circle key={i} cx={x(i)} cy={y(d.raw)} r="2.5"
  fill={T.text3} opacity="0.4"
- onMouseEnter={ => setHoverIdx(i)}
- onTouchStart={ => setHoverIdx(i)} />
+ onMouseEnter={() => setHoverIdx(i)}
+ onTouchStart={() => setHoverIdx(i)} />
  ))}
 
  {/* X-axis labels */}

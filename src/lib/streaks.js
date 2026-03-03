@@ -8,7 +8,7 @@ export function updateStreaks(streaks, logType, dateStr) {
  const streak = { ...(s[logType] || { current: 0, best: 0, lastDate: null }) };
  const yesterday = subtractDays(dateStr, 1);
 
- if (streak.lastDate === dateStr) return s; // already logged today
+ if (streak.lastDate === dateStr) return s; // already logged today()
 
  if (streak.lastDate === yesterday || streak.lastDate === null) {
  streak.current += 1;

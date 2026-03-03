@@ -10,9 +10,9 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  const [dismissed, setDismissed] = useState(false);
  const cfg = nutritionConfig || DEFAULT_NUTRITION_CONFIG;
 
- const checkInData = useMemo( => {
+ const checkInData = useMemo(() => {
  const lastCheckIn = cfg.lastCheckInDate;
- const allLogs = allBodyLogs || loadAllBodyLogs;
+ const allLogs = allBodyLogs || loadAllBodyLogs();
  const logsWithWeight = allLogs.filter(l => l.weight);
  const logsWithCals = allLogs.filter(l => l.calories);
 
@@ -20,7 +20,7 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  if (logsWithWeight.length < 7 && logsWithCals.length < 7) return null;
 
  // Check if 7+ days since last check-in
- const todayStr = today;
+ const todayStr = today();
 
  // Check snooze
  if (cfg.snoozeUntilDate && todayStr < cfg.snoozeUntilDate) return null;
@@ -30,7 +30,7 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  if (daysSince < 7) return null;
  } else {
  // No check-in ever — need 7+ days of data
- const firstDate = [.logsWithWeight,.logsWithCals].sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
+ const firstDate = [...logsWithWeight,...logsWithCals].sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
  if (!firstDate) return null;
  const daysSinceFirst = Math.floor((new Date(todayStr + 'T12:00:00') - new Date(firstDate + 'T12:00:00')) / 86400000);
  if (daysSinceFirst < 7) return null;
@@ -128,29 +128,29 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  const showAdjust = recommendation === 'adjust' && newTarget !== currentTarget;
  const weightUnit = cfg.weightUnit || 'lbs';
 
- const handleAccept = => {
+ const handleAccept = () => {
  onUpdateNutritionConfig({
-.cfg,
+...cfg,
  dailyCalorieTarget: newTarget,
- lastCheckInDate: today,
+ lastCheckInDate: today(),
  });
  setDismissed(true);
  };
 
- const handleDismiss = => {
+ const handleDismiss = () => {
  onUpdateNutritionConfig({
-.cfg,
- lastCheckInDate: today,
+...cfg,
+ lastCheckInDate: today(),
  });
  setDismissed(true);
  };
 
- const handleSnooze = => {
- const snoozeDate = new Date;
- snoozeDate.setDate(snoozeDate.getDate + 3);
+ const handleSnooze = () => {
+ const snoozeDate = new Date();
+ snoozeDate.setDate(snoozeDate.getDate() + 3);
  onUpdateNutritionConfig({
-.cfg,
- snoozeUntilDate: snoozeDate.toISOString.split('T')[0],
+...cfg,
+ snoozeUntilDate: snoozeDate.toISOString().split('T')[0],
  });
  setDismissed(true);
  };
@@ -171,7 +171,7 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  {/* TDEE */}
  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: T.radiusSm, padding: '8px', textAlign: 'center' }}>
  <div style={{ fontSize: '10px', color: T.text3, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>TDEE</div>
- <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: T.mono, color: T.accent }}>{tdee.toLocaleString}</div>
+ <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: T.mono, color: T.accent }}>{tdee.toLocaleString()}</div>
  <div style={{
  fontSize: '9px', marginTop: '2px',
  color: confidence === 'high' ? T.teal : confidence === 'medium' ? T.warn : T.text3,
@@ -201,7 +201,7 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  <div style={{ fontSize: '10px', color: T.text3, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Avg Intake</div>
  {avgIntake ? (
  <>
- <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: T.mono, color: T.text }}>{avgIntake.toLocaleString}</div>
+ <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: T.mono, color: T.text }}>{avgIntake.toLocaleString()}</div>
  <div style={{
  fontSize: '9px', marginTop: '2px',
  color: adherencePct >= 90 && adherencePct <= 110 ? T.teal : T.warn,
@@ -231,14 +231,14 @@ function WeeklyCheckInCard({ nutritionConfig, onUpdateNutritionConfig, settings,
  <div style={{ textAlign: 'center' }}>
  <div style={{ fontSize: '10px', color: T.text3 }}>Current</div>
  <div style={{ fontSize: '16px', fontFamily: T.mono, color: T.text2, fontWeight: 600 }}>
- {currentTarget.toLocaleString}
+ {currentTarget.toLocaleString()}
  </div>
  </div>
  <ChevronRight size={16} color={T.teal} />
  <div style={{ textAlign: 'center' }}>
  <div style={{ fontSize: '10px', color: T.teal }}>Proposed</div>
  <div style={{ fontSize: '16px', fontFamily: T.mono, color: T.teal, fontWeight: 700 }}>
- {newTarget.toLocaleString}
+ {newTarget.toLocaleString()}
  </div>
  </div>
  <span style={{ fontSize: '10px', color: T.text3 }}>kcal/day</span>

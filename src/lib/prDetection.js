@@ -92,10 +92,10 @@ export function detectPRs(exerciseId, currentSets) {
   if (prs.length > 0) {
     const prData = getPRData(exerciseId);
     for (const pr of prs) {
-      if (pr.type === 'weight') prData.weightPR = { value: pr.value, date: today, reps: completedSets.find(s => parseFloat(s.weight) === pr.value)?.reps };
-      if (pr.type === 'volume') prData.volumePR = { value: pr.value, date: today };
-      if (pr.type === 'e1rm') prData.e1rmPR = { value: pr.value, date: today };
-      if (pr.type === 'reps') { if (!prData.repPRs) prData.repPRs = {}; prData.repPRs[String(pr.weightTier)] = { reps: pr.value, date: today }; }
+      if (pr.type === 'weight') prData.weightPR = { value: pr.value, date: today(), reps: completedSets.find(s => parseFloat(s.weight) === pr.value)?.reps };
+      if (pr.type === 'volume') prData.volumePR = { value: pr.value, date: today() };
+      if (pr.type === 'e1rm') prData.e1rmPR = { value: pr.value, date: today() };
+      if (pr.type === 'reps') { if (!prData.repPRs) prData.repPRs = {}; prData.repPRs[String(pr.weightTier)] = { reps: pr.value, date: today() }; }
     }
     savePRData(exerciseId, prData);
   }

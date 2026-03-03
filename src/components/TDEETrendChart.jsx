@@ -10,22 +10,22 @@ export default function TDEETrendChart({ nutritionConfig }) {
  const [hoverIdx, setHoverIdx] = useState(null);
  const cfg = nutritionConfig || DEFAULT_NUTRITION_CONFIG;
 
- const chartData = useMemo( => {
+ const chartData = useMemo(() => {
  const hist = cfg.tdeeHistory || [];
  return hist.filter(h => h.date && h.tdee).sort((a, b) => a.date.localeCompare(b.date));
  }, [cfg.tdeeHistory]);
 
- const filteredData = useMemo( => {
+ const filteredData = useMemo(() => {
  if (chartData.length === 0) return [];
  const ranges = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'All': 99999 };
- const cutoff = subtractDays(today, ranges[range] || 90);
+ const cutoff = subtractDays(today(), ranges[range] || 90);
  return chartData.filter(d => d.date >= cutoff);
  }, [chartData, range]);
 
  // Delta (adaptation detection)
- const delta30 = useMemo( => {
+ const delta30 = useMemo(() => {
  if (chartData.length < 2) return null;
- const cutoff = subtractDays(today, 30);
+ const cutoff = subtractDays(today(), 30);
  const recent = chartData.filter(d => d.date >= cutoff);
  if (recent.length < 2) return null;
  const diff = recent[recent.length - 1].tdee - recent[0].tdee;
@@ -68,7 +68,7 @@ export default function TDEETrendChart({ nutritionConfig }) {
  const totalDays = chartData.length;
  const confWidth = totalDays < 14 ? 100 : totalDays < 30 ? 50 : 25;
  const confTopPath = filteredData.map((d, i) => `${i === 0 ? 'M' : 'L'}${xPos(i).toFixed(1)},${yPos(d.tdee + confWidth).toFixed(1)}`).join(' ');
- const confBotPath = [...filteredData].reverse.map((d, i) => {
+ const confBotPath = [...filteredData].reverse().map((d, i) => {
  const origIdx = filteredData.length - 1 - i;
  return `L${xPos(origIdx).toFixed(1)},${yPos(d.tdee - confWidth).toFixed(1)}`;
  }).join(' ');
@@ -99,7 +99,7 @@ export default function TDEETrendChart({ nutritionConfig }) {
  </div>
  <div style={{ display: 'flex', gap: '3px' }}>
  {['1M', '3M', '6M', '1Y', 'All'].map(r => (
- <button key={r} onClick={ => setRange(r)} style={{
+ <button key={r} onClick={() => setRange(r)} style={{
  padding: '6px 10px', borderRadius: '6px', border: 'none', fontSize: '10px', fontWeight: 600, cursor: 'pointer', minHeight: '32px',
  background: range === r ? T.accentSoft : 'transparent',
  color: range === r ? T.accent : T.text3,
@@ -111,7 +111,7 @@ export default function TDEETrendChart({ nutritionConfig }) {
  <GlassCard animate={false} style={{ padding: '12px 8px 8px', overflow: 'hidden' }}>
  <svg key={range} className="chart-svg" viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}
  role="img" aria-label={`TDEE trend chart over ${range}`}
- onMouseLeave={ => setHoverIdx(null)} onTouchEnd={ => setHoverIdx(null)}>
+ onMouseLeave={() => setHoverIdx(null)} onTouchEnd={() => setHoverIdx(null)}>
  <defs>
  <linearGradient id="tdeeGrad" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={T.teal} stopOpacity="0.12" />
@@ -139,7 +139,7 @@ export default function TDEETrendChart({ nutritionConfig }) {
  {/* Data dots */}
  {filteredData.map((d, i) => (
  <circle key={i} cx={xPos(i)} cy={yPos(d.tdee)} r="2" fill={T.teal} opacity="0.5"
- onMouseEnter={ => setHoverIdx(i)} onTouchStart={ => setHoverIdx(i)} />
+ onMouseEnter={() => setHoverIdx(i)} onTouchStart={() => setHoverIdx(i)} />
  ))}
 
  {/* X-axis */}

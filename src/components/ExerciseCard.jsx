@@ -16,18 +16,18 @@ function StepperField({ value, onChange, step, min = 0, max = 9999, unit, placeh
  const inputRef = useRef(null);
  const numVal = parseFloat(value) || 0;
 
- useEffect( => {
+ useEffect(() => {
  if (editing && inputRef.current) {
  inputRef.current.focus;
  inputRef.current.select;
  }
  }, [editing]);
 
- const increment = => onChange(String(Math.min(max, +(numVal + step).toFixed(1))));
- const decrement = => onChange(String(Math.max(min, +(numVal - step).toFixed(1))));
+ const increment = () => onChange(String(Math.min(max, +(numVal + step).toFixed(1))));
+ const decrement = () => onChange(String(Math.max(min, +(numVal - step).toFixed(1))));
 
  // Clamp value to min/max on blur
- const handleBlur = => {
+ const handleBlur = () => {
  const num = parseFloat(value);
  if (!isNaN(num)) {
  const clamped = Math.max(min, Math.min(max, num));
@@ -71,7 +71,7 @@ function StepperField({ value, onChange, step, min = 0, max = 9999, unit, placeh
  <button onClick={decrement} aria-label={`Decrease ${fieldLabel}`} style={btnStyle('left')}>
  <Minus size={16} strokeWidth={2.5} />
  </button>
- <button onClick={ => setEditing(true)} aria-label={`${value || 'empty'} ${fieldLabel}, tap to edit`} style={{
+ <button onClick={() => setEditing(true)} aria-label={`${value || 'empty'} ${fieldLabel}, tap to edit`} style={{
  flex: 1, height: 44, minWidth: 56,
  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
  background: done ? 'rgba(0,230,118,0.06)' : 'rgba(255,255,255,0.02)',
@@ -112,7 +112,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  const currentType = set.setType || 'working';
  const typeMeta = SET_TYPE_META[currentType];
 
- const cycleType = => {
+ const cycleType = () => {
  const idx = SET_TYPES.indexOf(currentType);
  const next = SET_TYPES[(idx + 1) % SET_TYPES.length];
  onSetType?.(index, next);
@@ -136,7 +136,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  }}>
  {/* Set type badge — tap to cycle */}
  {typeMeta.label ? (
- <button onClick={(e) => { e.stopPropagation; cycleType; }}
+ <button onClick={(e) => { e.stopPropagation(); cycleType(); }}
  title={`Set type: ${currentType}. Tap to change.`}
  aria-label={`Set type: ${currentType}. Tap to cycle through types.`}
  style={{
@@ -148,7 +148,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  {typeMeta.label}
  </button>
  ) : (
- <button onClick={(e) => { e.stopPropagation; cycleType; }}
+ <button onClick={(e) => { e.stopPropagation(); cycleType(); }}
  title="Working set. Tap to change type."
  aria-label="Working set. Tap to cycle through set types."
  style={{
@@ -173,7 +173,7 @@ function SetRow({ index, set, reps, onUpdate, onToggle, onSetType, weightUnit = 
  </span>
  )}
  </span>
- <button onClick={ => onToggle(index)}
+ <button onClick={() => onToggle(index)}
  aria-label={set.done ? `Unmark set ${index + 1} as done` : `Mark set ${index + 1} as done${!set.weight && !set.reps ? ' (enter weight or reps first)' : ''}`}
  style={{
  width: 48, height: 48, minWidth: 48, borderRadius: '14px',
@@ -263,30 +263,30 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  const num = parseFloat(value);
  if (!isNaN(num)) sanitized = String(Math.max(1, Math.min(10, num)));
  }
- const newSets = [.exercise.logSets];
- newSets[idx] = {.newSets[idx], [field]: sanitized };
- onUpdate({.exercise, logSets: newSets });
+ const newSets = [...exercise.logSets];
+ newSets[idx] = {...newSets[idx], [field]: sanitized };
+ onUpdate({...exercise, logSets: newSets });
  };
 
  const updateSetType = (idx, type) => {
- const newSets = [.exercise.logSets];
- newSets[idx] = {.newSets[idx], setType: type };
- onUpdate({.exercise, logSets: newSets });
+ const newSets = [...exercise.logSets];
+ newSets[idx] = {...newSets[idx], setType: type };
+ onUpdate({...exercise, logSets: newSets });
  };
 
  const toggleSet = (idx) => {
- const newSets = [.exercise.logSets];
+ const newSets = [...exercise.logSets];
  const wasDone = newSets[idx].done;
  // Prevent marking done if both weight and reps are empty (avoids zero-volume logs)
  if (!wasDone && !newSets[idx].weight && !newSets[idx].reps) {
  return; // Don't toggle — require at least reps to be entered
  }
- newSets[idx] = {.newSets[idx], done: !wasDone };
- onUpdate({.exercise, logSets: newSets });
+ newSets[idx] = {...newSets[idx], done: !wasDone };
+ onUpdate({...exercise, logSets: newSets });
  // Auto-start rest timer when marking a set as done (not when un-marking)
  if (!wasDone && autoStartTimer) {
  const restDuration = exercise.rest || defaultRestTimer || 90;
- onRestTimerChange?.(Date.now + restDuration * 1000);
+ onRestTimerChange?.(Date.now() + restDuration * 1000);
  }
  // PR detection on set completion
  if (!wasDone) {
@@ -309,10 +309,10 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  transition: 'all 0.3s',
  }}>
  {/* Header */}
- <div onClick={ => setExpanded(!expanded)}
+ <div onClick={() => setExpanded(!expanded)}
  role="button" tabIndex={0} aria-expanded={expanded}
  aria-label={`${exercise.name}, ${completedSets} of ${totalSets} sets completed${allDone ? ', exercise complete' : ''}. ${expanded ? 'Collapse' : 'Expand'} details.`}
- onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault; setExpanded(!expanded); } }}
+ onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}
  style={{
  padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
  }}>
@@ -379,9 +379,9 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  </div>
  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
  <div
- onClick={(e) => { e.stopPropagation; window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); }}
+ onClick={(e) => { e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); }}
  role="button" tabIndex={0} aria-label="Watch form tutorial video"
- onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault; e.stopPropagation; window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); } }}
+ onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); window.open(getVideoUrl(exercise.id, exercise.name), '_blank'); } }}
  style={{
  width: 32, height: 32, borderRadius: '8px',
  background: 'rgba(255,0,0,0.12)',
@@ -462,7 +462,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  </div>
  {prescription.action === 'progress_exercise' && prescription.progressionExercise && onSwapExercise && (
  <button
- onClick={(e) => { e.stopPropagation; onSwapExercise(exercise.id, prescription.progressionIds?.[0] || null); }}
+ onClick={(e) => { e.stopPropagation(); onSwapExercise(exercise.id, prescription.progressionIds?.[0] || null); }}
  style={{
  marginTop: '8px', width: '100%', padding: '8px', borderRadius: '8px', border: `1px solid rgba(0,230,118,0.2)`,
  background: 'rgba(0,230,118,0.08)', color: T.success, fontSize: '12px', fontWeight: 600,
@@ -476,7 +476,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  )}
 
  {/* Per-set last session display */}
- {exercise.lastSessionSets && exercise.lastSessionSets.length > 0 && ( => {
+ {exercise.lastSessionSets && exercise.lastSessionSets.length > 0 && (() => {
  const setsText = exercise.lastSessionSets.map((s, i) => {
  const lbl = s.weight > 0 ? (s.weight + '\u00D7' + s.reps) : (s.reps + ' reps');
  const isLast = i === exercise.lastSessionSets.length - 1;
@@ -489,7 +489,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <span>{setsText}</span>
  </div>
  );
- })}
+ })()}
  {!exercise.lastSessionSets && !prescription && (
  <div style={{ fontSize: '11px', color: T.text3, padding: '4px 0 2px', opacity: 0.5, fontStyle: 'italic' }}>
  {'First time \u2014 no previous data'}
@@ -502,7 +502,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  {sessionPRs.map((pr, i) => {
  let label = '';
  if (pr.type === 'weight') label = 'Weight PR! ' + pr.value + ' ' + weightUnit;
- if (pr.type === 'volume') label = 'Volume PR! ' + pr.value.toLocaleString + ' ' + weightUnit;
+ if (pr.type === 'volume') label = 'Volume PR! ' + pr.value.toLocaleString() + ' ' + weightUnit;
  if (pr.type === 'e1rm') label = 'e1RM PR! ' + pr.value + ' ' + weightUnit;
  if (pr.type === 'reps') label = 'Rep PR! ' + pr.value + ' reps' + (pr.weightTier > 0 ? (' @ ' + pr.weightTier + weightUnit) : '');
  return (
@@ -545,9 +545,9 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  {/* Rest timer */}
  {restEndTime && !allDone && (
  <div style={{ marginTop: '12px', position:'relative' }}>
- <RestTimer endTime={restEndTime} duration={exercise.rest || defaultRestTimer} onComplete={ => onRestTimerChange?.(null)} onPauseState={(newEnd) => onRestTimerChange?.(newEnd)} vibrate={timerVibrate} />
+ <RestTimer endTime={restEndTime} duration={exercise.rest || defaultRestTimer} onComplete={() => onRestTimerChange?.(null)} onPauseState={(newEnd) => onRestTimerChange?.(newEnd)} vibrate={timerVibrate} />
  {goToSettings && (
- <button onClick={(e) => { e.stopPropagation; goToSettings('workout'); }}
+ <button onClick={(e) => { e.stopPropagation(); goToSettings('workout'); }}
  title="Timer settings"
  style={{ position:'absolute', top:'10px', right:'0px', background:'none', border:'none',
  color:T.text3, cursor:'pointer', padding:'10px', opacity:0.4, zIndex:2, minWidth:'44px', minHeight:'44px',
@@ -560,7 +560,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
 
  {/* Skip / Swap Exercise Panel */}
  <div style={{ display:'flex', gap:'8px', marginTop:'12px' }}>
- <button onClick={(e) => { e.stopPropagation; setShowSwapPanel(!showSwapPanel); }}
+ <button onClick={(e) => { e.stopPropagation(); setShowSwapPanel(!showSwapPanel); }}
  style={{ background: showSwapPanel ? 'rgba(255,82,82,0.1)' : 'rgba(255,255,255,0.04)',
  border:`1px solid ${showSwapPanel ? 'rgba(255,82,82,0.2)' : T.border}`,
  borderRadius:'8px', color: showSwapPanel ? T.danger : T.text3, fontSize:'12px',
@@ -570,7 +570,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  </button>
  </div>
 
- {showSwapPanel && ( => {
+ {showSwapPanel && (() => {
  const currentPhase = stats?.phase || 'acute';
  const currentLocation = stats?.location || 'gym';
  // Build alternatives: exercise.subs first, then same-category exercises
@@ -588,7 +588,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
 .slice(0, 5);
 
  const primarySub = subsFromDb[0] || null;
- const secondaryAlts = [.subsFromDb.slice(1),.sameCategoryAlts].slice(0, 6);
+ const secondaryAlts = [...subsFromDb.slice(1),...sameCategoryAlts].slice(0, 6);
 
  return (
  <div style={{ marginTop:'8px', padding:'12px', background:'rgba(255,82,82,0.04)',
@@ -599,7 +599,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
 
  {/* Primary suggestion */}
  {primarySub && (
- <button onClick={(e) => { e.stopPropagation; onSwapExercise(exercise.id, primarySub.id); setShowSwapPanel(false); }}
+ <button onClick={(e) => { e.stopPropagation(); onSwapExercise(exercise.id, primarySub.id); setShowSwapPanel(false); }}
  style={{
  width:'100%', padding:'10px 12px', marginBottom:'8px', borderRadius:'10px',
  background:`linear-gradient(135deg, rgba(0,230,118,0.08), rgba(78,205,196,0.06))`,
@@ -629,7 +629,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  <div style={{ fontSize:'10px', color:T.text3, marginBottom:'4px', paddingLeft:'2px' }}>Other options:</div>
  <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
  {secondaryAlts.map(alt => (
- <button key={alt.id} onClick={(e) => { e.stopPropagation; onSwapExercise(exercise.id, alt.id); setShowSwapPanel(false); }}
+ <button key={alt.id} onClick={(e) => { e.stopPropagation(); onSwapExercise(exercise.id, alt.id); setShowSwapPanel(false); }}
  style={{
  padding:'10px 12px', borderRadius:'8px', background:T.bgCard, border:`1px solid ${T.border}`,
  cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:'8px',
@@ -649,7 +649,7 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
 
  {/* Remove entirely */}
  {onRemoveExercise && (
- <button onClick={(e) => { e.stopPropagation; onRemoveExercise(exercise.id); setShowSwapPanel(false); }}
+ <button onClick={(e) => { e.stopPropagation(); onRemoveExercise(exercise.id); setShowSwapPanel(false); }}
  style={{
  width:'100%', padding:'12px', borderRadius:'8px',
  background:'rgba(255,82,82,0.06)', border:`1px solid rgba(255,82,82,0.12)`,
@@ -664,10 +664,10 @@ function ExerciseCard({ exercise, onUpdate, onSwapExercise, onRemoveExercise, st
  )}
  </div>
  );
- })}
+ })()}
 
  {/* Cues toggle */}
- <button onClick={(e) => { e.stopPropagation; setShowCues(!showCues); }}
+ <button onClick={(e) => { e.stopPropagation(); setShowCues(!showCues); }}
  style={{ marginTop:'12px', background:'none', border:'none', color:T.teal, fontSize:'13px',
  cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', padding:'10px 0', minHeight:'44px' }}>
  <Info size={14} /> {showCues ? 'Hide cues' : 'Show cues & tips'}

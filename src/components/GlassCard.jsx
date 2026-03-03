@@ -13,7 +13,7 @@ export default function GlassCard({ children, style, onClick, animate = true, cl
  animation: animate ? 'fadeUp 0.4s ease-out both' : 'none',
  transition: 'background 0.2s, transform 0.15s',
  cursor: onClick ? 'pointer' : 'default',
-.style
+...style
  }}>
  {children}
  </div>

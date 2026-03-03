@@ -22,7 +22,7 @@ export default function MuscleMap({ recentMuscles }) {
  if (cat === 'shoulders') {
  const variants = ['shoulders', 'side_delts', 'rear_delts', 'front_delts'];
  const found = variants.map(k => recentMuscles?.[k]).filter(v => v !== undefined);
- if (found.length > 0) hours = Math.min(.found);
+ if (found.length > 0) hours = Math.min(...found);
  }
  if (!hours && hours !== 0) return 'rgba(255,255,255,0.06)';
  if (hours < 48) return T.success;

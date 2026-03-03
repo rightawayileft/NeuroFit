@@ -39,7 +39,7 @@ export const css = `
  @keyframes toast { 0% { transform:translateY(100%) scale(0.9); opacity:0 } 15% { transform:translateY(0) scale(1); opacity:1 } 85% { transform:translateY(0) scale(1); opacity:1 } 100% { transform:translateY(-20px); opacity:0 } }
  @keyframes chartFade { from { opacity:0.3 } to { opacity:1 } }
  @keyframes timerPulse { 0%,100% { box-shadow:0 0 0 rgba(0,230,118,0) } 50% { box-shadow:0 0 12px rgba(0,230,118,0.25), inset 0 0 8px rgba(0,230,118,0.05) } }
-.chart-svg path,.chart-svg rect:not(:first-child) { transition: opacity 0.2s ease-out; }
+.chart-svg path,...chart-svg rect:not(:first-child) { transition: opacity 0.2s ease-out; }
 .chart-svg { animation: chartFade 0.25s ease-out; }
  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
  html, body, #root { height:100%; background:${T.bg}; color:${T.text}; font-family:${T.font}; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
