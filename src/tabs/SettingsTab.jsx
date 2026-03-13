@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Dumbbell, Heart, ChevronDown, Clock, Plus, X,
   Settings, Target, Download, Upload, Trash2, Scale,
-  Database, MessageCircle, AlertTriangle, Lock, Globe, RefreshCw
+  Database, MessageCircle, AlertTriangle, Lock, Globe, RefreshCw, Sparkles
 } from 'lucide-react';
 import { T } from '@/design/tokens';
 import { EXERCISES } from '@/data/exercises';
@@ -260,7 +260,7 @@ GENETICS: [Add genetic markers in settings]
 PRECAUTIONS: [Configure based on your conditions]
 SUBS: [Configure based on your precautions]`;
 
-function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coachCfg, onUpdateCoachCfg, history, scrollToSection, nutritionConfig, onUpdateNutritionConfig, calibration, onUpdateCalibration, apiCfg, onUpdateApiCfg }) {
+function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coachCfg, onUpdateCoachCfg, history, scrollToSection, nutritionConfig, onUpdateNutritionConfig, calibration, onUpdateCalibration, apiCfg, onUpdateApiCfg, dayOffset = 0, onDayOffsetChange, currentDate }) {
  const trainingRef = useRef(null);
  const programmingRef = useRef(null);
  const unitsRef = useRef(null);
@@ -287,6 +287,16 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  const setCoachKey = (prov, val) => onUpdateCoachCfg({ ...coachCfg, keys:{ ...coachCfg.keys, [prov]: val } });
  const updApi = (key, val) => onUpdateApiCfg({ ...apiCfg, [key]: val });
  const setApiKey = (key, val) => onUpdateApiCfg({ ...apiCfg, keys:{ ...apiCfg.keys, [key]: val } });
+
+ const applyUxPreset = (preset) => {
+ const presets = {
+ focus: { uiDensity:'compact', textScale:'normal', reduceMotion:false, autoStartTimer:true, confirmDestructiveActions:true },
+ accessibility: { uiDensity:'comfortable', textScale:'large', reduceMotion:true, autoStartTimer:false, confirmDestructiveActions:true },
+ speed: { uiDensity:'compact', textScale:'normal', reduceMotion:true, autoStartTimer:true, confirmDestructiveActions:false },
+ };
+ const next = presets[preset];
+ if (next) onUpdateSettings({ ...settings, ...next });
+ };
 
  const coachProvider = PROVIDERS[coachCfg.provider] || PROVIDERS.anthropic;
  const currentModel = coachCfg.model === '__custom__'
@@ -438,6 +448,16 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  <div style={{ animation:'fadeIn 0.3s ease-out', paddingBottom:'40px' }}>
  <h2 style={{ fontSize:'22px', fontWeight:700, marginBottom:'16px', letterSpacing:'-0.02em' }}>Settings</h2>
 
+
+ <div style={{ marginBottom:'12px', padding:'12px', border:`1px solid ${T.border}`, borderRadius:'12px', background:'rgba(255,255,255,0.03)' }}>
+ <div style={{ fontSize:'11px', color:T.text3, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px', display:'flex', alignItems:'center', gap:'6px' }}><Sparkles size={12} /> UX Quick Presets</div>
+ <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+ <button onClick={() => applyUxPreset('focus')} style={S.pill(false)}>Focus</button>
+ <button onClick={() => applyUxPreset('accessibility')} style={S.pill(false)}>Accessibility</button>
+ <button onClick={() => applyUxPreset('speed')} style={S.pill(false)}>Speed</button>
+ </div>
+ </div>
+
  {/* =============== TRAINING =============== */}
  <SettingsSection id="training" title="Training Profile" icon={Dumbbell} sectionRef={trainingRef}
  autoOpen={scrollToSection === 'training'}>
@@ -549,6 +569,37 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  ))}
  </div>
  </div>
+ <div style={{ marginTop:'14px' }}>
+ <span style={S.label}>UI Density</span>
+ <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+ {[{id:'comfortable',label:'Comfortable'},{id:'compact',label:'Compact'}].map(d => (
+ <button key={d.id} onClick={() => upd('uiDensity', d.id)} style={S.pill((settings.uiDensity || 'comfortable') === d.id)}>{d.label}</button>
+ ))}
+ </div>
+ </div>
+ <div style={{ marginTop:'14px' }}>
+ <span style={S.label}>Text Size</span>
+ <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+ {[{id:'normal',label:'Normal'},{id:'large',label:'Large'}].map(size => (
+ <button key={size.id} onClick={() => upd('textScale', size.id)} style={S.pill((settings.textScale || 'normal') === size.id)}>{size.label}</button>
+ ))}
+ </div>
+ </div>
+ <div style={{ ...S.rowBorder, marginTop:'8px' }}>
+ <span style={{ fontSize:'13px', color:T.text2 }}>Reduce motion / animations</span>
+ <button onClick={() => upd('reduceMotion', !settings.reduceMotion)} role='switch' aria-checked={settings.reduceMotion === true} style={S.toggle(settings.reduceMotion === true)}>
+ <div style={S.toggleDot(settings.reduceMotion === true)} />
+ </button>
+ </div>
+
+
+ <div style={S.row}>
+ <span style={{ fontSize:'13px', color:T.text2 }}>Collapse daily log by default</span>
+ <button onClick={() => upd('collapseDailyLogByDefault', !(settings.collapseDailyLogByDefault !== false))} role='switch' aria-checked={settings.collapseDailyLogByDefault !== false} style={S.toggle(settings.collapseDailyLogByDefault !== false)}>
+ <div style={S.toggleDot(settings.collapseDailyLogByDefault !== false)} />
+ </button>
+ </div>
+
  <div>
  <span style={S.label}>First Day of Week</span>
  <div style={{ display:'flex', gap:'8px' }}>
@@ -617,6 +668,12 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  <span style={{ fontSize:'13px', color:T.text2 }}>Count warmup sets in stats</span>
  <button onClick={() => upd('countWarmupInStats', !settings.countWarmupInStats)} role="switch" aria-checked={settings.countWarmupInStats} style={S.toggle(settings.countWarmupInStats)}>
  <div style={S.toggleDot(settings.countWarmupInStats)} />
+ </button>
+ </div>
+ <div style={S.row}>
+ <span style={{ fontSize:'13px', color:T.text2 }}>Confirm destructive actions</span>
+ <button onClick={() => upd('confirmDestructiveActions', !(settings.confirmDestructiveActions !== false))} role="switch" aria-checked={settings.confirmDestructiveActions !== false} style={S.toggle(settings.confirmDestructiveActions !== false)}>
+ <div style={S.toggleDot(settings.confirmDestructiveActions !== false)} />
  </button>
  </div>
  </SettingsSection>
@@ -1308,6 +1365,30 @@ function SettingsTab({ settings, onUpdateSettings, profile, updateProfile, coach
  {/* =============== DATA =============== */}
  <SettingsSection id="data" title="Data Management" icon={Database} sectionRef={dataRef}
  autoOpen={scrollToSection === 'data'}>
+
+ <div style={{ marginBottom:'14px', padding:'10px 12px', border:`1px solid ${T.border}`, borderRadius:'10px', background:'rgba(255,255,255,0.03)' }}>
+ <div style={{ ...S.rowBorder, paddingTop:0 }}>
+ <div>
+ <div style={{ fontSize:'13px', color:T.text2, fontWeight:600 }}>Simulation / Testing mode</div>
+ <div style={{ fontSize:'10px', color:T.text3, marginTop:'2px' }}>Enable date simulation controls for QA and demo workflows.</div>
+ </div>
+ <button onClick={() => upd('enableSimulationMode', !settings.enableSimulationMode)} role='switch' aria-checked={settings.enableSimulationMode === true} style={S.toggle(settings.enableSimulationMode === true)}>
+ <div style={S.toggleDot(settings.enableSimulationMode === true)} />
+ </button>
+ </div>
+ {settings.enableSimulationMode && (
+ <>
+ <div style={{ marginTop:'10px', fontSize:'12px', color:T.text3 }}>Active simulated day: <span style={{ color:T.text, fontFamily:T.mono }}>{currentDate || today()}</span></div>
+ <div style={{ display:'flex', gap:'8px', marginTop:'8px', alignItems:'center', flexWrap:'wrap' }}>
+ <button onClick={() => onDayOffsetChange?.(dayOffset - 1)} style={S.pill(false)}>-1 day</button>
+ <button onClick={() => onDayOffsetChange?.(dayOffset + 1)} style={S.pill(false)}>+1 day</button>
+ <button onClick={() => onDayOffsetChange?.(0)} style={S.pill(dayOffset === 0)}>Reset to today</button>
+ <span style={{ fontSize:'11px', color:T.text3 }}>Offset: {dayOffset}d</span>
+ </div>
+ </>
+ )}
+ </div>
+
  <div style={{ fontSize:'12px', color:T.text2, marginBottom:'12px' }}>
  Storage used: <span style={{ fontFamily:T.mono, color:T.text }}>{storageUsed} KB</span> &middot; {LS.keys('').length} keys
  </div>

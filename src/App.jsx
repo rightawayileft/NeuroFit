@@ -20,6 +20,8 @@ import CoachTab, { DEFAULT_COACH_CONFIG } from '@/tabs/CoachTab';
 import SettingsTab from '@/tabs/SettingsTab';
 import Toast from '@/components/Toast';
 
+const clampSimOffset = (value) => Math.max(-365, Math.min(365, Math.round(value || 0)));
+
 // ============================================================
 // MAIN APP
 // ============================================================
@@ -31,12 +33,12 @@ export default function App() {
  const [profile, setProfile] = useState(() => LS.get('profile', { phase:'acute', location:'gym', xp:0, streak:0, lastActive:'' }));
  const [settings, setSettings] = useState(() => LS.get('appSettings', DEFAULT_SETTINGS));
  const [workout, setWorkout] = useState(() => {
- const raw = LS.get(dayKey('workout'), null);
+ const raw = LS.get(dayKey('workout', today(LS.get('simulatedDayOffset', 0))), null);
  if (!raw) return null;
  return normalizeWorkout(raw);
  });
- const [rehabStatus, setRehabStatus] = useState(() => LS.get(dayKey('rehab'), {}));
- const [cardioLog, setCardioLog] = useState(() => LS.get(dayKey('cardio'), []));
+ const [rehabStatus, setRehabStatus] = useState(() => LS.get(dayKey('rehab', today(LS.get('simulatedDayOffset', 0))), {}));
+ const [cardioLog, setCardioLog] = useState(() => LS.get(dayKey('cardio', today(LS.get('simulatedDayOffset', 0))), []));
  const [history, setHistory] = useState(() => LS.get('history', {}));
  const [toast, setToast] = useState(null);
  const [coachCfg, setCoachCfg] = useState(() => LS.get('coachCfg', DEFAULT_COACH_CONFIG));
@@ -44,25 +46,30 @@ export default function App() {
  const [calibration, setCalibration] = useState(() => LS.get('bfCalibration', DEFAULT_CALIBRATION));
  const [apiCfg, setApiCfg] = useState(() => LS.get('apiCfg', DEFAULT_API_CONFIG));
  const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => LS.get('disclaimerAccepted', false));
+ const [dayOffset, setDayOffset] = useState(() => clampSimOffset(LS.get('simulatedDayOffset', 0)));
+ const effectiveOffset = settings.enableSimulationMode ? dayOffset : 0;
+ const currentDate = today(effectiveOffset);
+ const todayKey = dayKey('workout', currentDate);
 
  // Persist
  useEffect(() => { LS.set('profile', profile); }, [profile]);
  useEffect(() => { LS.set('appSettings', settings); }, [settings]);
- useEffect(() => { LS.set(dayKey('workout'), workout); }, [workout]);
- useEffect(() => { LS.set(dayKey('rehab'), rehabStatus); }, [rehabStatus]);
- useEffect(() => { LS.set(dayKey('cardio'), cardioLog); }, [cardioLog]);
+ useEffect(() => { LS.set(todayKey, workout); }, [todayKey, workout]);
+ useEffect(() => { LS.set(dayKey('rehab', currentDate), rehabStatus); }, [currentDate, rehabStatus]);
+ useEffect(() => { LS.set(dayKey('cardio', currentDate), cardioLog); }, [currentDate, cardioLog]);
  useEffect(() => { LS.set('history', history); }, [history]);
  useEffect(() => { LS.set('coachCfg', coachCfg); }, [coachCfg]);
  useEffect(() => { LS.set('nutritionConfig', nutritionConfig); }, [nutritionConfig]);
  useEffect(() => { LS.set('bfCalibration', calibration); }, [calibration]);
  useEffect(() => { LS.set('apiCfg', apiCfg); }, [apiCfg]);
  useEffect(() => { LS.set('disclaimerAccepted', disclaimerAccepted); }, [disclaimerAccepted]);
+ useEffect(() => { LS.set('simulatedDayOffset', dayOffset); }, [dayOffset]);
 
  // Cross-tab sync: detect when another tab modifies critical data
  useEffect(() => {
  const handleStorageChange = (e) => {
  // Only react to workout or profile changes from other tabs
- const criticalKeys = [dayKey('workout'), 'profile', 'history'];
+ const criticalKeys = [todayKey, 'profile', 'history'];
  if (e.key && criticalKeys.includes(e.key) && e.newValue !== e.oldValue) {
  // Check if current tab has unsaved work
  const hasWork = workout?.exercises?.some(ex => ex.logSets?.some(s => s.done));
@@ -71,7 +78,7 @@ export default function App() {
  } else {
  // No active work — safe to auto-reload state
  try {
- if (e.key === dayKey('workout')) {
+ if (e.key === todayKey) {
  const raw = e.newValue ? JSON.parse(e.newValue) : null;
  setWorkout(raw ? normalizeWorkout(raw) : null);
  } else if (e.key === 'profile') {
@@ -83,7 +90,15 @@ export default function App() {
  };
  window.addEventListener('storage', handleStorageChange);
  return () => window.removeEventListener('storage', handleStorageChange);
- }, [workout]); // eslint-disable-line react-hooks/exhaustive-deps
+ }, [todayKey, workout]); // eslint-disable-line react-hooks/exhaustive-deps
+
+ // Load day-scoped data when simulated day changes
+ useEffect(() => {
+ const rawWorkout = LS.get(todayKey, null);
+ setWorkout(rawWorkout ? normalizeWorkout(rawWorkout) : null);
+ setRehabStatus(LS.get(dayKey('rehab', currentDate), {}));
+ setCardioLog(LS.get(dayKey('cardio', currentDate), []));
+ }, [currentDate, todayKey]);
 
  // Migration: ensure profile has streaks, populate nutritionConfig from existing settings
  useEffect(() => {
@@ -127,7 +142,7 @@ export default function App() {
 
  // Streak management
  useEffect(() => {
- const t = today();
+ const t = currentDate;
  if (profile.lastActive && profile.lastActive !== t) {
  const last = new Date(profile.lastActive);
  const now = new Date(t);
@@ -144,12 +159,12 @@ export default function App() {
  };
 
  const addXP = (amount, message) => {
- setProfile(p => ({...p, xp: p.xp + amount, lastActive: today() }));
+ setProfile(p => ({...p, xp: p.xp + amount, lastActive: currentDate }));
  showToast(message, amount);
  };
 
  const markActive = (type) => {
- const t = today();
+ const t = currentDate;
  setHistory(prev => {
  const acts = prev[t] || [];
  if (!acts.includes(type)) return {...prev, [t]: [...acts, type] };
@@ -176,7 +191,7 @@ export default function App() {
  // Warn before overwriting a workout with logged data
  const currentExercises = workout?.exercises || [];
  const hasLoggedSets = currentExercises.some(e => e.logSets?.some(s => s.done));
- if (hasLoggedSets) {
+ if (hasLoggedSets && settings.confirmDestructiveActions !== false) {
  if (!window.confirm('You have logged sets in your current workout. Generating a new workout will discard this data. Continue?')) {
  return;
  }
@@ -196,7 +211,7 @@ export default function App() {
  const exercises = [...w].filter(ex => ex && ex.id);
  
  setWorkout({
- date: today(),
+ date: currentDate,
  splitDay: splitDayName,
  weekId: getWeekId(),
  exercises,
@@ -242,6 +257,7 @@ export default function App() {
 
  const handleRemoveExercise = (exerciseId) => {
  if (!workout?.exercises) return;
+ if (settings.confirmDestructiveActions !== false && !window.confirm('Remove this exercise from today\'s workout?')) return;
  const newExercises = workout.exercises.filter(ex => ex.id !== exerciseId);
  setWorkout({...workout, exercises: newExercises });
  };
@@ -296,7 +312,7 @@ export default function App() {
  if (combined === 7) xpToAdd += BODY_XP.streak7;
  if (combined === 30) xpToAdd += BODY_XP.streak30;
 
- return {...p, streaks, xp: p.xp + xpToAdd, lastActive: today() };
+ return {...p, streaks, xp: p.xp + xpToAdd, lastActive: currentDate };
  });
 
  if (log.weight || (log.calories && log.protein)) {
@@ -366,6 +382,8 @@ export default function App() {
  <div style={{
  maxWidth:'480px', margin:'0 auto', minHeight:'100vh', position:'relative',
  background:T.bg, paddingBottom:'80px', paddingTop:'env(safe-area-inset-top, 0px)',
+ fontSize: settings.textScale === 'large' ? '17px' : '16px',
+ lineHeight: settings.uiDensity === 'compact' ? 1.35 : 1.5,
  }}>
  {/* HEADER */}
  <div style={{
@@ -378,7 +396,7 @@ export default function App() {
  <h1 style={{ fontSize:'22px', fontWeight:800, letterSpacing:'-0.03em',
  background:`linear-gradient(135deg, ${T.text}, ${T.text2})`,
  WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
- NeuroRehab
+ NeuroFit
  </h1>
  <button onClick={() => goToSettings('training')} style={{
  fontSize:'11px', color:T.text3, marginTop:'1px', textTransform:'uppercase', letterSpacing:'0.5px',
@@ -401,7 +419,7 @@ export default function App() {
  </div>
  <button onClick={() => goToSettings()} style={{
  background:tab === 'settings' ? T.accentSoft : 'none', border:'none', cursor:'pointer',
- padding:'6px', borderRadius:'8px', display:'flex', alignItems:'center', transition:'all 0.2s',
+ padding:'6px', borderRadius:'8px', display:'flex', alignItems:'center', transition: settings.reduceMotion ? 'none' : 'all 0.2s',
  }}>
  <Settings size={18} color={tab === 'settings' ? T.accent : T.text3} />
  </button>
@@ -437,6 +455,8 @@ export default function App() {
  onSessionMeta={handleSessionMeta} onAddXP={addXP} goToSettings={goToSettings}
  nutritionConfig={nutritionConfig} calibration={calibration} onSaveBodyLog={handleSaveBodyLog}
  apiCfg={apiCfg}
+ currentDate={currentDate}
+ confirmDestructiveActions={settings.confirmDestructiveActions !== false}
  isGeneratingWorkout={isGeneratingWorkout}
  restTimers={restTimers} onRestTimerChange={(exId, endTime) => setRestTimers(prev => endTime ? {...prev, [exId]: endTime } : (() => { const n = {...prev }; delete n[exId]; return n; })())} />
  )}
@@ -462,7 +482,9 @@ export default function App() {
  history={history} scrollToSection={settingsSection}
  nutritionConfig={nutritionConfig} onUpdateNutritionConfig={setNutritionConfig}
  calibration={calibration} onUpdateCalibration={setCalibration}
- apiCfg={apiCfg} onUpdateApiCfg={setApiCfg} />
+ apiCfg={apiCfg} onUpdateApiCfg={setApiCfg}
+ dayOffset={dayOffset} onDayOffsetChange={(next) => setDayOffset(clampSimOffset(next))}
+ currentDate={currentDate} />
  )}
  </main>
 
@@ -485,7 +507,7 @@ export default function App() {
  style={{
  background:'none', border:'none', display:'flex', flexDirection:'column',
  alignItems:'center', gap:'3px', cursor:'pointer', padding:'8px 14px',
- transition:'all 0.2s', position:'relative', minHeight:'48px',
+ transition: settings.reduceMotion ? 'none' : 'all 0.2s', position:'relative', minHeight:'48px',
  }}>
  {active && (
  <div style={{ position:'absolute', top:'-8px', width:'20px', height:'3px',

@@ -21,7 +21,7 @@ import JournalCard from '@/components/JournalCard';
 // SESSION FEEDBACK CARD
 // ============================================================
 
-export function SessionFeedbackCard({ allDone, exercises, workout, weightUnit = 'lbs', sessionRPE, durationMinutes, onSessionMeta, sessionPRCount = 0 }) {
+export function SessionFeedbackCard({ allDone, exercises, workout, currentDate, weightUnit = 'lbs', sessionRPE, durationMinutes, onSessionMeta, sessionPRCount = 0 }) {
  const [localRPE, setLocalRPE] = useState(sessionRPE || null);
  const [localDuration, setLocalDuration] = useState(durationMinutes || '');
  const [saved, setSaved] = useState(sessionRPE !== null);
@@ -61,7 +61,7 @@ export function SessionFeedbackCard({ allDone, exercises, workout, weightUnit = 
  const comparison = useMemo(() => {
  if (!workout?.splitDay || !summary) return null;
  try {
- const todayStr = today();
+ const todayStr = currentDate || today();
  const keys = LS.keys('workout:').sort((a, b) => b.localeCompare(a));
  for (const key of keys) {
  const dateStr = key.replace('workout:', '');
@@ -637,7 +637,7 @@ export function WorkoutDetailModal({ date, onClose }) {
 // TAB: TODAY
 // ============================================================
 
-function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSessionMeta, onAddXP, settings, goToSettings, nutritionConfig, calibration, onSaveBodyLog, onRemoveExercise, apiCfg, isGeneratingWorkout = false, restTimers = {}, onRestTimerChange }) {
+function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSessionMeta, onAddXP, settings, goToSettings, nutritionConfig, calibration, onSaveBodyLog, onRemoveExercise, apiCfg, currentDate, confirmDestructiveActions = true, isGeneratingWorkout = false, restTimers = {}, onRestTimerChange }) {
  // Extract exercises from v2 format
  const exercises = workout?.exercises || (Array.isArray(workout) ? workout : null);
  const splitLabel = workout?.splitDay?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Full Body';
@@ -691,10 +691,12 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  return (
  <div style={{ animation:'fadeIn 0.5s ease-out' }}>
  <DailyLogCard settings={settings} nutritionConfig={nutritionConfig} calibration={calibration}
- profile={profile} onSave={onSaveBodyLog} onAddXP={onAddXP} />
+ profile={profile} onSave={onSaveBodyLog} onAddXP={onAddXP}
+ currentDate={currentDate} defaultCollapsed={settings?.collapseDailyLogByDefault !== false} />
 
  {/* Journal Card */}
  <JournalCard workout={workout} />
+
 
  {/* Scroll hint for workout section below */}
  <div style={{
@@ -809,7 +811,8 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  return (
  <div style={{ animation:'fadeIn 0.3s ease-out' }}>
  <DailyLogCard settings={settings} nutritionConfig={nutritionConfig} calibration={calibration}
- profile={profile} onSave={onSaveBodyLog} onAddXP={onAddXP} />
+ profile={profile} onSave={onSaveBodyLog} onAddXP={onAddXP}
+ currentDate={currentDate} defaultCollapsed={settings?.collapseDailyLogByDefault !== false} />
 
  {/* Journal Card */}
  <JournalCard workout={workout} />
@@ -831,7 +834,10 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  {splitLabel} &middot; {exercises.length} exercises &middot; {mandatory.length} mandatory
  </p>
  </div>
- <button disabled={isGeneratingWorkout} onClick={() => !isGeneratingWorkout && onGenerateWorkout()} style={{
+ <button disabled={isGeneratingWorkout} onClick={() => {
+ if (isGeneratingWorkout) return;
+ if (!confirmDestructiveActions || window.confirm('Generate a new workout for this day?')) onGenerateWorkout();
+ }} style={{
  background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:'10px',
  padding:'8px 12px', color:T.text2, fontSize:'12px', cursor: isGeneratingWorkout ? 'default' : 'pointer',
  display:'flex', alignItems:'center', gap:'4px',
@@ -899,6 +905,7 @@ function TodayTab({ profile, workout, onGenerateWorkout, onUpdateExercise, onSes
  durationMinutes={workout?.durationMinutes}
  onSessionMeta={onSessionMeta}
  sessionPRCount={sessionPRCount}
+ currentDate={currentDate}
  />
  )}
 

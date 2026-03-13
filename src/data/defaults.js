@@ -6,6 +6,11 @@ export const DEFAULT_SETTINGS = {
  // Units & Display
  weightUnit: 'lbs', // 'lbs' or 'kg'
  firstDayOfWeek: 0, // 0=Sun, 1=Mon, 6=Sat
+ uiDensity: 'comfortable', // 'comfortable' | 'compact'
+ textScale: 'normal', // 'normal' | 'large'
+ reduceMotion: false,
+ collapseDailyLogByDefault: true,
+ enableSimulationMode: false,
  // Workout behavior
  defaultRestTimer: 90, // seconds
  autoStartTimer: true, // start rest timer on set complete
@@ -15,6 +20,7 @@ export const DEFAULT_SETTINGS = {
  weightIncrementUpper: 5, // lbs/kg increment for upper body
  weightIncrementLower: 10, // lbs/kg increment for lower body
  countWarmupInStats: false, // include warmup sets in volume stats
+ confirmDestructiveActions: true, // confirm before reset/remove actions
  // Recovery & Programming
  recoveryWindow: 48, // hours (default)
  cardioWeeklyTarget: 5, // sessions per week
