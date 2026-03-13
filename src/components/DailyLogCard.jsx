@@ -7,8 +7,9 @@ import { LS } from '@/lib/storage';
 import { getCalibratedBodyFat } from '@/lib/bodyFatCalibration';
 import GlassCard from '@/components/GlassCard';
 
-function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave, onAddXP }) {
- const [selectedDate, setSelectedDate] = useState(today());
+function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave, onAddXP, currentDate, defaultCollapsed = false }) {
+ const baseDate = currentDate || today();
+ const [selectedDate, setSelectedDate] = useState(baseDate);
  const existing = LS.get(`bodyLog:${selectedDate}`, null);
  const prevLog = LS.get(`bodyLog:${subtractDays(selectedDate, 1)}`, null);
 
@@ -23,6 +24,7 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  const [hrv, setHrv] = useState(existing?.sleep?.hrv != null ? String(existing.sleep.hrv) : '');
  const [notes, setNotes] = useState(existing?.notes ?? '');
  const [showMore, setShowMore] = useState(false);
+ const [collapsed, setCollapsed] = useState(defaultCollapsed);
  const [dexaBiaValue, setDexaBiaValue] = useState('');
  const [saved, setSaved] = useState(!!existing);
 
@@ -43,6 +45,10 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  setSaved(!!log);
  setDexaBiaValue('');
  }, [selectedDate]);
+
+ useEffect(() => {
+ setSelectedDate(baseDate);
+ }, [baseDate]);
 
  const calibrated = bfValue && calibration?.points?.length > 0
  ? getCalibratedBodyFat(Number(bfValue), calibration) : null;
@@ -96,8 +102,8 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
 
  const wUnit = settings?.weightUnit || 'lbs';
  const waistUnit = nutritionConfig?.waistUnit || 'in';
- const isToday = selectedDate === today();
- const isYesterday = selectedDate === subtractDays(today(), 1);
+ const isToday = selectedDate === baseDate;
+ const isYesterday = selectedDate === subtractDays(baseDate, 1);
 
  const InputField = ({ icon, label, value, onChange, unit, inputMode = 'decimal', placeholder }) => (
  <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:`1px solid ${T.border}` }}>
@@ -121,38 +127,42 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  return (
  <GlassCard style={{ marginBottom:'16px', padding:'16px' }}>
  {/* Header with date navigation */}
- <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+ <div style={{ marginBottom:'12px' }}>
+ <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
  <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
  <Scale size={18} color={T.accent} />
  <span style={{ fontSize:'15px', fontWeight:600 }}>Daily Log</span>
  </div>
- <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
+ <button onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed} style={{
+ background:'rgba(255,255,255,0.04)', border:`1px solid ${T.border}`, borderRadius:'8px', color:T.text2,
+ fontSize:'12px', padding:'6px 10px', cursor:'pointer', minHeight:'36px'
+ }}>{collapsed ? 'Expand' : 'Collapse'}</button>
+ </div>
+ <div style={{ display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap' }}>
  <button onClick={() => setSelectedDate(subtractDays(selectedDate, 1))}
  aria-label="Previous day"
  style={{ padding:'8px', borderRadius:'6px', border:'none', fontSize:'14px', cursor:'pointer',
- background:'rgba(255,255,255,0.04)', color:T.text3, lineHeight:1, minWidth:'44px', minHeight:'44px',
+ background:'rgba(255,255,255,0.04)', color:T.text3, lineHeight:1, minWidth:'40px', minHeight:'40px',
  display:'flex', alignItems:'center', justifyContent:'center' }}>
  <ChevronLeft size={14} />
  </button>
- <div style={{ position:'relative' }}>
  <input type="date" value={selectedDate}
- max={today()}
+ max={baseDate}
  onChange={e => { if (e.target.value) setSelectedDate(e.target.value); }}
  aria-label="Select log date"
  style={{
  background:'rgba(255,255,255,0.04)', border:`1px solid ${T.border}`, borderRadius:'6px',
- padding:'4px 8px', color:T.text, fontSize:'16px', fontFamily:T.mono, outline:'none',
- cursor:'pointer', colorScheme:'dark', width:'130px',
+ padding:'6px 8px', color:T.text, fontSize:'14px', fontFamily:T.mono, outline:'none',
+ cursor:'pointer', colorScheme:'dark', flex:'1 1 140px', minWidth:0,
  }} />
- </div>
  {!isToday && (
- <button onClick={() => setSelectedDate(today())}
- style={{ padding:'8px 12px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:600,
+ <button onClick={() => setSelectedDate(baseDate)}
+ style={{ padding:'8px 10px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:600,
  cursor:'pointer', background:T.accentSoft, color:T.accent, minHeight:'36px' }}>Today</button>
  )}
- {selectedDate !== subtractDays(today(), 1) && !isToday && (
- <button onClick={() => setSelectedDate(subtractDays(today(), 1))}
- style={{ padding:'8px 12px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:500,
+ {selectedDate !== subtractDays(baseDate, 1) && !isToday && (
+ <button onClick={() => setSelectedDate(subtractDays(baseDate, 1))}
+ style={{ padding:'8px 10px', borderRadius:'6px', border:'none', fontSize:'11px', fontWeight:500,
  cursor:'pointer', background:'rgba(255,255,255,0.04)', color:T.text3, minHeight:'36px' }}>Yest.</button>
  )}
  </div>
@@ -167,6 +177,15 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  </div>
  )}
 
+
+ {collapsed && (
+ <div style={{ padding:'8px 0 4px', fontSize:'12px', color:T.text3 }}>
+ {saved ? 'Saved' : 'Not saved yet'} · {isToday ? 'Today' : isYesterday ? 'Yesterday' : selectedDate}
+ </div>
+ )}
+
+ {!collapsed && (
+ <>
  {/* Core fields */}
  <InputField icon="⚖️" label="Weight" value={weight} onChange={setWeight} unit={wUnit} placeholder={prevLog?.weight ? String(prevLog.weight) : '—'} />
  <InputField icon="🔥" label="Calories" value={calories} onChange={setCalories} unit="kcal" inputMode="numeric" />
@@ -268,6 +287,9 @@ function DailyLogCard({ settings, nutritionConfig, calibration, profile, onSave,
  }} />
  </div>
  </div>
+ )}
+
+ </>
  )}
 
  {/* Save button */}
